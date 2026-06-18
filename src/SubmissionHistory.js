@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import DataTable from 'react-data-table-component';
 import { tableCustomStyles } from './tablestyle.jsx';
 
@@ -28,6 +28,8 @@ function RefreshIcon({ spinning = false }) {
   );
 }
 
+const REFRESH_COOLDOWN_SECONDS = 30;
+
 const SubmissionHistory = ({ handleRerun, handleForm }) => {
   const [jobHistory, setJobHistory] = useState([]);
   const [startDate, setStartDate] = useState('');
@@ -35,6 +37,8 @@ const SubmissionHistory = ({ handleRerun, handleForm }) => {
   const [openDropdownId, setOpenDropdownId] = useState('__none__');
   const [filteredData, setFilteredData] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const lastRefreshAtRef = useRef(0);
   
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -105,10 +109,32 @@ const SubmissionHistory = ({ handleRerun, handleForm }) => {
     return processedData;
   };
 
+  const updateCooldown = useCallback(() => {
+    if (!lastRefreshAtRef.current) {
+      setCooldownSeconds(0);
+      return;
+    }
+    const elapsed = Math.floor((Date.now() - lastRefreshAtRef.current) / 1000);
+    const remaining = Math.max(0, REFRESH_COOLDOWN_SECONDS - elapsed);
+    setCooldownSeconds(remaining);
+  }, []);
+
+  useEffect(() => {
+    updateCooldown();
+    const intervalId = window.setInterval(updateCooldown, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [updateCooldown]);
+
   const handleRefresh = async () => {
+    if (isRefreshing || cooldownSeconds > 0) {
+      return;
+    }
+
     setIsRefreshing(true);
     try {
       await fetchJobHistory({ applyCurrentFilter: true });
+      lastRefreshAtRef.current = Date.now();
+      setCooldownSeconds(REFRESH_COOLDOWN_SECONDS);
     } catch (error) {
       console.error('Failed to refresh job history:', error);
     } finally {
@@ -285,15 +311,19 @@ const SubmissionHistory = ({ handleRerun, handleForm }) => {
         <button
           className="btn btn-primary maroon-button d-inline-flex align-items-center mt-2 mt-md-0"
           onClick={handleRefresh}
-          disabled={isRefreshing}
+          disabled={isRefreshing || cooldownSeconds > 0}
           aria-label="Refresh job history"
         >
           <RefreshIcon spinning={isRefreshing} />
-          {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          {isRefreshing
+            ? 'Refreshing...'
+            : cooldownSeconds > 0
+              ? `Refresh (${cooldownSeconds}s)`
+              : 'Refresh'}
         </button>
       </div>
 
-      <div style={{ overflowX: 'auto'}}>
+      <div style={{ overflowX: "hidden", width: "100%" }}>
         <DataTable
           columns={columns}
           data={filteredData}

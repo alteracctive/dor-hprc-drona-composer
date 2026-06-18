@@ -231,24 +231,65 @@ footer {
   padding-right: 0;
 }
 
+/* Composer page: fill viewport without body scroll */
+body:has(.job-composer-page) {
+  overflow: hidden;
+  height: 100vh;
+}
+
+body:has(.job-composer-page) header {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+body:has(.job-composer-page) #main-container.container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+body:has(.job-composer-page) .footer {
+  display: none;
+}
+
 .job-composer-page {
   width: 100%;
-  height: calc(100vh - 20px);
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+  overflow-x: hidden;
   padding: 8px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .job-composer-page--with-header {
-  height: calc(100vh - 72px - 8px);
+  height: auto;
 }
 
 .job-composer-container {
   height: 100%;
   max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  overflow-x: hidden;
+}
+
+.job-composer-container .card {
+  padding: 0.25rem;
+  min-width: 0;
 }
 
 .job-composer-container .card-body {
   padding: 0.75rem;
+  min-width: 0;
 }
 
 .job-composer-sidebar {
@@ -275,6 +316,7 @@ footer {
 
 .job-composer-history-body {
   padding: 0.5rem !important;
+  overflow-x: hidden !important;
 }
 
 .submission-history-panel {
@@ -546,7 +588,24 @@ footer {
 }
 
 .env-table__col-env {
-  min-width: 12rem;
+  width: 18%;
+}
+
+.environment-step__table-wrap {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.environment-step__table-wrap .table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.environment-step__table-wrap .table td,
+.environment-step__table-wrap .table th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .env-table__env-cell {
@@ -594,11 +653,11 @@ footer {
 }
 
 .env-table__col-category {
-  min-width: 9rem;
+  width: 14%;
 }
 
 .env-table__col-organization {
-  min-width: 10rem;
+  width: 16%;
 }
 
 .environment-step__mode-toggle {
@@ -696,9 +755,10 @@ footer {
 .job-preview-step {
   display: flex;
   flex-direction: column;
-  min-height: 500px;
-  height: calc(100vh - 320px);
-  max-height: 800px;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  max-height: none;
 }
 
 .job-preview-step__header {

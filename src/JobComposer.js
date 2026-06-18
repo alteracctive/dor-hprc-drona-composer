@@ -395,7 +395,10 @@ function JobComposer({
                 minHeight: 0,
               }}
             >
-              <div className="card-body" style={{ overflowY: "auto", flex: "1 1 auto" }}>
+              <div
+                className="card-body"
+                style={{ overflowY: "auto", overflowX: "hidden", flex: "1 1 auto", minWidth: 0 }}
+              >
                 <ConfigGate onStatusChange={setConfigBlocked} />
 
                 {!configBlocked && (
@@ -568,7 +571,10 @@ function JobComposer({
                 minHeight: 0,
               }}
             >
-              <div className="card-body" style={{ overflowY: "auto", flex: "1 1 auto" }}>
+              <div
+                className="card-body"
+                style={{ overflowY: "auto", overflowX: "hidden", flex: "1 1 auto", minWidth: 0 }}
+              >
                 <SettingsPage />
               </div>
             </div>

@@ -148,7 +148,7 @@ function EnvironmentTable({ rows, sortColumn, sortDirection, onSort, renderActio
   );
 
   return (
-    <div className="table-responsive">
+    <div className="environment-step__table-wrap">
       <table className="table table-striped table-bordered">
         <thead>
           <tr>

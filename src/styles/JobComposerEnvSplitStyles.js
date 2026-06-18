@@ -7,27 +7,30 @@ const styles = `
 }
 
 #main-container.container {
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .composer-multipane-layout {
   display: flex !important;
   flex-direction: row !important;
   align-items: stretch;
-  gap: 1.25rem;
+  gap: 1rem;
   width: 100%;
   min-height: 0px;
+  min-width: 0;
   margin-bottom: 1rem;
+  overflow-x: hidden;
 }
 
 .composer-filmstrip-pane {
   position: sticky;
   top: 0;
-  width: 280px !important;
-  min-width: 280px !important;
-  height: calc(100vh - 180px);
-  max-height: calc(100vh - 180px);
+  flex: 0 0 220px;
+  max-width: 220px;
+  min-width: 0;
+  height: auto;
+  max-height: min(70vh, 640px);
   margin-top: 0;
   align-self: flex-start;
   overflow-y: auto;
@@ -57,11 +60,7 @@ const styles = `
 .composer-main-pane {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.job-composer-container .composer-filmstrip-pane {
-  height: auto;
-  max-height: min(70vh, 640px);
+  overflow-x: hidden;
 }
 
 .env-filmstrip {
@@ -237,6 +236,8 @@ const styles = `
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .drona-footer-left,
@@ -244,6 +245,7 @@ const styles = `
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .drona-footer strong {
