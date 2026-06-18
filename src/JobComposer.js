@@ -8,9 +8,12 @@ import WorkflowStepTracker from "./WorkflowStepTracker";
 import EnvironmentStep from "./EnvironmentStep";
 import JobPreviewStep from "./JobPreviewStep";
 import { useJobSocket } from "./hooks/useJobSocket";
+import EnvironmentFilmstrip from "./EnvironmentFilmstrip";
 import { validateRequiredFields } from "./schemaRendering/utils/fieldUtils";
 import ConfigGate from "./ConfigGate";
 import SettingsPage from "./SettingsPage";
+import Footer from "./Footer";
+import "./styles/JobComposerEnvSplitStyles.js";
 
 function SidebarIcon({ name }) {
   const iconProps = {
@@ -234,6 +237,10 @@ function JobComposer({
 
     const action = formRef.current.getAttribute("action");
     setHasSubmittedCurrentPreview(true);
+    console.log("Submitting form data:");
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
     submitJob(action, formData);
   };
 
@@ -387,77 +394,87 @@ function JobComposer({
                     )}
 
                     {(workflowStep === 2 || workflowStep === 3) && props.environment?.env && (
-                      <>
-                        <input type="hidden" name="location" value={props.runLocation || ""} />
-                        <input type="hidden" name="drona_job_id" value={dronaJobId || ""} />
-                        <div
-                          style={{ display: workflowStep === 2 ? "block" : "none" }}
-                          aria-hidden={workflowStep === 3}
-                        >
-                          <input type="hidden" name="runtime" value={props.environment.env} />
-                          <h5 className="mb-3" style={{ color: "maroon", fontWeight: 600 }}>
-                            {props.environment.env}
-                          </h5>
-                          <Composer
-                            environment={props.environment}
-                            fields={props.fields}
-                            onFileChange={props.handleUploadedFiles}
-                            setError={setError}
-                            ref={props.composerRef}
-                            sync_job_name={props.sync_job_name}
-                            runLocation={props.runLocation}
-                            setRunLocation={props.setRunLocation}
-                            customRunLocation={props.customRunLocation}
-                            setLocationPickedByUser={props.setLocationPickedByUser}
-                            locationPickedByUser={props.locationPickedByUser}
+                      <div className="composer-multipane-layout">
+                        <aside className="composer-filmstrip-pane">
+                          <EnvironmentFilmstrip
+                            environments={props.environments}
+                            selectedEnvironment={props.environment}
+                            onSelectEnvironment={props.handleEnvChange}
+                            onAddEnvironment={() => setWorkflowStep(1)}
                           />
-                          {workflowStep === 2 && (
-                            <div className="workflow-step-actions">
-                              <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={() => setWorkflowStep(1)}
-                              >
-                                Back
-                              </button>
-                              <button
-                                type="button"
-                                id="job-preview-button"
-                                className="btn btn-primary maroon-button-filled"
-                                onClick={handlePreview}
-                                disabled={isPreviewLoading}
-                              >
-                                {isPreviewLoading ? (
-                                  <>
-                                    <span
-                                      className="spinner-border spinner-border-sm mr-1"
-                                      role="status"
-                                      aria-hidden="true"
-                                    />
-                                    Loading Preview...
-                                  </>
-                                ) : (
-                                  "Preview and Submit"
-                                )}
-                              </button>
-                            </div>
+                        </aside>
+                        <div className="composer-main-pane">
+                          <input type="hidden" name="location" value={props.runLocation || ""} />
+                          <input type="hidden" name="drona_job_id" value={dronaJobId || ""} />
+                          <div
+                            style={{ display: workflowStep === 2 ? "block" : "none" }}
+                            aria-hidden={workflowStep === 3}
+                          >
+                            <input type="hidden" name="runtime" value={props.environment.env} />
+                            <h5 className="mb-3" style={{ color: "maroon", fontWeight: 600 }}>
+                              {props.environment.env}
+                            </h5>
+                            <Composer
+                              environment={props.environment}
+                              fields={props.fields}
+                              onFileChange={props.handleUploadedFiles}
+                              setError={setError}
+                              ref={props.composerRef}
+                              sync_job_name={props.sync_job_name}
+                              runLocation={props.runLocation}
+                              setRunLocation={props.setRunLocation}
+                              customRunLocation={props.customRunLocation}
+                              setLocationPickedByUser={props.setLocationPickedByUser}
+                              locationPickedByUser={props.locationPickedByUser}
+                            />
+                            {workflowStep === 2 && (
+                              <div className="workflow-step-actions">
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  onClick={() => setWorkflowStep(1)}
+                                >
+                                  Back
+                                </button>
+                                <button
+                                  type="button"
+                                  id="job-preview-button"
+                                  className="btn btn-primary maroon-button-filled"
+                                  onClick={handlePreview}
+                                  disabled={isPreviewLoading}
+                                >
+                                  {isPreviewLoading ? (
+                                    <>
+                                      <span
+                                        className="spinner-border spinner-border-sm mr-1"
+                                        role="status"
+                                        aria-hidden="true"
+                                      />
+                                      Loading Preview...
+                                    </>
+                                  ) : (
+                                    "Preview and Submit"
+                                  )}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {workflowStep === 3 && (
+                            <JobPreviewStep
+                              messages={props.messages}
+                              multiPaneRef={multiPaneRef}
+                              panes={props.panes}
+                              setPanes={props.setPanes}
+                              outputLines={lines}
+                              htmlOutput={htmlOutput}
+                              status={status}
+                              isSubmitDisabled={isSubmitDisabled}
+                              onBack={() => setWorkflowStep(2)}
+                            />
                           )}
                         </div>
-                      </>
-                    )}
-
-                    {workflowStep === 3 && (
-                      <JobPreviewStep
-                        messages={props.messages}
-                        multiPaneRef={multiPaneRef}
-                        panes={props.panes}
-                        setPanes={props.setPanes}
-                        outputLines={lines}
-                        htmlOutput={htmlOutput}
-                        status={status}
-                        isSubmitDisabled={isSubmitDisabled}
-                        onBack={() => setWorkflowStep(2)}
-                      />
+                      </div>
                     )}
                   </form>
                 )}
@@ -526,6 +543,8 @@ function JobComposer({
               </div>
             </div>
           </div>
+
+          <Footer />
         </div>
       </div>
 
@@ -534,7 +553,9 @@ function JobComposer({
         onClose={() => setShowRequiredFieldsModal(false)}
         missingFields={missingRequiredFields}
       />
+      
     </div>
+    
   );
 }
 

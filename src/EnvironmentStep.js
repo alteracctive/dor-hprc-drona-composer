@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { getEnvironmentIconUrl, getEnvironmentInitial } from "./EnvironmentIcons";
+import { getEnvironmentIconUrl, getEnvironmentInitial, getEnvironmentEmoji } from "./EnvironmentIcons";
 
 const COMPACT_MODE_STORAGE_KEY = "drona_composer_environment_compact_mode";
 
@@ -11,9 +11,10 @@ function readCompactModePreference() {
   }
 }
 
-function EnvironmentNameCell({ name, envKey, iconUrl, textStyle }) {
+function EnvironmentNameCell({ name, envKey, iconUrl, apiIcon, textStyle }) {
   const [imageFailed, setImageFailed] = useState(false);
   const resolvedIconUrl = getEnvironmentIconUrl(envKey, iconUrl);
+  const emoji = getEnvironmentEmoji(envKey, apiIcon);
   const showImage = resolvedIconUrl && !imageFailed;
 
   return (
@@ -25,6 +26,10 @@ function EnvironmentNameCell({ name, envKey, iconUrl, textStyle }) {
           alt=""
           onError={() => setImageFailed(true)}
         />
+      ) : emoji ? (
+        <span className="env-table__env-emoji" aria-hidden="true">
+          {emoji}
+        </span>
       ) : (
         <span className="env-table__env-fallback" aria-hidden="true">
           {getEnvironmentInitial(name)}
@@ -184,6 +189,7 @@ function EnvironmentTable({ rows, sortColumn, sortDirection, onSort, renderActio
                   name={getEnvName(row)}
                   envKey={row.env}
                   iconUrl={row.icon_url}
+                  apiIcon={row.icon}
                   textStyle={getEnvStyle ? getEnvStyle(row) : undefined}
                 />
               </td>
@@ -224,6 +230,7 @@ function EnvironmentCompactGrid({
                 name={getEnvName(row)}
                 envKey={row.env}
                 iconUrl={row.icon_url}
+                apiIcon={row.icon}
                 textStyle={getEnvStyle ? getEnvStyle(row) : undefined}
               />
             </div>
@@ -282,6 +289,7 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
         organization: metadataByName[env.value]?.organization ?? "N/A",
         version: metadataByName[env.value]?.version ?? "N/A",
         icon_url: metadataByName[env.value]?.icon_url,
+        icon: env.icon,
       })),
     [environments, metadataByName]
   );

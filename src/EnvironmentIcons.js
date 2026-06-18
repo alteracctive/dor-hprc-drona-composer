@@ -26,6 +26,13 @@ export function getEnvironmentIconUrl(envName, rowIconUrl) {
   return `${getIconBase()}/${file}`;
 }
 
+export function getEnvironmentEmoji(envName, apiIcon) {
+  if (BUNDLED_ICON_FILES[envName]) {
+    return null;
+  }
+  return apiIcon || null;
+}
+
 export function getEnvironmentInitial(name) {
   if (!name) return "?";
   return name.trim().charAt(0).toUpperCase();

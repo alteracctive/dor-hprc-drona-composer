@@ -574,6 +574,17 @@ footer {
   line-height: 1;
 }
 
+.env-table__env-emoji {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
 .env-table__env-name {
   line-height: 1.3;
 }
