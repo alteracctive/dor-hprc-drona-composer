@@ -326,14 +326,14 @@ const styles = {
     },
     primary: {
       padding: "0.5rem 1rem",
-      border: "1px solid maroon",
+      border: "1px solid #500000",
       borderRadius: "0.25rem",
       cursor: "pointer",
       marginRight: "0.5rem",
       fontWeight: "500",
       fontSize: "14px",
       transition: "all 0.2s ease",
-      backgroundColor: "maroon",
+      backgroundColor: "#500000",
       color: "white",
     },
     secondary: {

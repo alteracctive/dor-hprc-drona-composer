@@ -51,7 +51,11 @@ def submit_job_route():
 
     # Optional: keep this fallback (does NOT affect location)
     if not (params.get("name") or "").strip():
-        params["name"] = drona_job_id
+        location = (params.get("location") or "").strip()
+        if location:
+            params["name"] = os.path.basename(os.path.normpath(location))
+        if not (params.get("name") or "").strip():
+            params["name"] = drona_job_id
 
     # Filesystem side effects use the preview-computed location
     create_folder_if_not_exist(location)

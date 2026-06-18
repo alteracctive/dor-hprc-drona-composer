@@ -5,7 +5,7 @@ const tableCustomStyles = {
             fontWeight: 'bold',
             paddingLeft: '0 8px',
             justifyContent: 'center',
-            color: 'maroon',
+            color: '#500000',
             '&[data-column-sorted="true"]': {
                 color: '#003C71',
             },
@@ -29,17 +29,17 @@ const tableCustomStyles = {
     },
     table: { 
         style: {
-            overflow: 'visible',
+            minWidth: '1050px',
         },
     },
     tableWrapper: { 
         style: {
-            overflow: 'visible',
+            overflowX: 'auto',
         },
     },
     responsiveWrapper: { 
         style: {
-            overflow: 'visible',
+            overflowX: 'auto',
         },
     },
     pagination: { 

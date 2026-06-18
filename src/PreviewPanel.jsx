@@ -24,6 +24,7 @@ const AlertBlock = ({ messages, type, styles, isFullscreen }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <h6 className="alert-heading" style={styles.alertTitle}>{config.title}</h6>
         <button
+          type="button"
           onClick={() => setIsVisible(false)}
           style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', padding: '0', marginLeft: '10px', opacity: 0.6, lineHeight: 1 }}
           onMouseOver={(e) => e.target.style.opacity = 1}
@@ -94,6 +95,7 @@ const SplitColumnHeader = ({ split, splits, sortedPanes, onSetActivePane, onAddS
               onMouseLeave={() => setHoveredIdx(null)}
             >
               <button
+                type="button"
                 style={{ ...makeTabStyle(isActive), paddingRight: isCustom && isHovered ? '20px' : undefined }}
                 onClick={() => onSetActivePane(split.id, idx)}
               >
@@ -101,6 +103,7 @@ const SplitColumnHeader = ({ split, splits, sortedPanes, onSetActivePane, onAddS
               </button>
               {isCustom && isHovered && (
                 <button
+                  type="button"
                   style={{
                     position: 'absolute', right: '3px',
                     background: 'none', border: 'none', padding: '0 2px',
@@ -117,6 +120,7 @@ const SplitColumnHeader = ({ split, splits, sortedPanes, onSetActivePane, onAddS
         })}
         {splitIndex === 0 && (
           <button
+            type="button"
             style={{ ...actionBtnStyle, fontSize: '16px', padding: '0 6px', color: '#888' }}
             onClick={onAddFile}
             title="Add file to job"
@@ -128,6 +132,7 @@ const SplitColumnHeader = ({ split, splits, sortedPanes, onSetActivePane, onAddS
         )}
       </div>
       <button
+        type="button"
         style={actionBtnStyle}
         onClick={() => onAddSplit(splitIndex, split.activePaneIndex)}
         title="Split editor right"
@@ -138,6 +143,7 @@ const SplitColumnHeader = ({ split, splits, sortedPanes, onSetActivePane, onAddS
       </button>
       {splits.length > 1 && (
         <button
+          type="button"
           style={actionBtnStyle}
           onClick={() => onRemoveSplit(split.id)}
           title="Close split"

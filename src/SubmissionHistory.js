@@ -154,7 +154,16 @@ const SubmissionHistory = ({ handleRerun, handleForm }) => {
       name: 'ID',
       selector: row => row.job_id || 'N/A',
       sortable: true,
-      width: '100px',
+      width: '150px',
+      minWidth: '150px',
+      cell: row => {
+        const id = row.job_id || 'N/A';
+        return (
+          <span className="submission-history-job-id" title={id}>
+            {id}
+          </span>
+        );
+      },
     },
     {
       name: 'Name',
@@ -339,12 +348,11 @@ const SubmissionHistory = ({ handleRerun, handleForm }) => {
         </button>
       </div>
 
-      <div style={{ overflowX: "hidden", width: "100%" }}>
+      <div className="submission-history-table-scroll">
         <DataTable
           columns={columns}
           data={filteredData}
           customStyles={tableCustomStyles}
-          responsive
           pagination
           noDataComponent="No jobs have been submitted yet."
               sortIcon={

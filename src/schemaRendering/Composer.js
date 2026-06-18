@@ -25,10 +25,6 @@ const Composer = forwardRef((props, ref) => {
     // console.log("FIELDS: ");
     // console.log(props.fields);
 
-    //Initial setup of the environment so user did not choose any location, reset the flag
-    props.setLocationPickedByUser?.(false);
-    // console.log("INITIAL STATE: " + props.locationPickedByUser)
-
     const normalizedFields = normalizeFields(props.fields);
 
     // If we have a pending dictionary update

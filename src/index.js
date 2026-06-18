@@ -2,8 +2,16 @@ import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import JobComposer from "./JobComposer";
 import RerunPromptModal from "./RerunPromptModal";
+import { fieldsToFormData } from "./schemaRendering/utils/fieldUtils";
 
 import { GlobalFilesContext } from "./GlobalFilesContext";
+
+function getEnvironmentKey(env) {
+  if (!env?.env || !env?.src) {
+    return null;
+  }
+  return `${env.env}:${env.src}`;
+}
 
 export function App() {
   const [globalFiles, setGlobalFiles] = useState([]);
@@ -13,6 +21,7 @@ export function App() {
   const [messages, setMessages] = useState([]);
 
   const [panes, setPanes] = useState([{ title: "", name: "", content: "" }]);
+  const [previewPanesSnapshot, setPreviewPanesSnapshot] = useState([]);
   const [jobStatus, setJobStatus] = useState("new");
   const [rerunInfo, setRerunInfo] = useState({});
   const [rerunOriginalName, setRerunOriginalName] = useState("");
@@ -27,12 +36,15 @@ export function App() {
 
   const formRef = useRef(null);
   const multiPaneRef = useRef(null);
+  const step2StateCacheRef = useRef(new Map());
+  const pendingStep2RestoreKeyRef = useRef(null);
 
   const defaultRunLocation = document.drona_dir + "/runs";
   const [runLocation, setRunLocation] = useState(defaultRunLocation);
   const [baseRunLocation, setBaseRunLocation] = useState(defaultRunLocation);
   const [locationPickedByUser, setLocationPickedByUser] = useState(false);
   const [dronaJobId, setDronaJobId] = useState(null);
+  const [jobName, setJobName] = useState("");
 
   const [environments, setEnvironments] = useState([]);
   const [error, setError] = useState(null);
@@ -41,6 +53,7 @@ export function App() {
     setBaseRunLocation(defaultRunLocation);
     setRunLocation(defaultRunLocation);
     setLocationPickedByUser(false);
+    setJobName("");
   }, [environment]);
 
   useEffect(() => {
@@ -66,11 +79,56 @@ export function App() {
 
   function sync_job_name(name, customRunLocation, options = {}) {
     const { force = false } = options;
+    setJobName(name || "");
     if (!locationPickedByUser || force) {
       const preferredLocation = customRunLocation || baseRunLocation;
       setRunLocation(preferredLocation + "/" + name);
       setBaseRunLocation(preferredLocation);
     }
+  }
+
+  function hasStep2StateForEnv(envKey) {
+    return envKey ? step2StateCacheRef.current.has(envKey) : false;
+  }
+
+  function captureStep2State() {
+    const envKey = getEnvironmentKey(environment);
+    if (!envKey || !composerRef.current) {
+      return;
+    }
+
+    step2StateCacheRef.current.set(envKey, {
+      formData: fieldsToFormData(composerRef.current.getFields()),
+      runLocation,
+      baseRunLocation,
+      jobName,
+      locationPickedByUser,
+      globalFiles,
+    });
+  }
+
+  function restoreStep2State(envKey) {
+    const cached = step2StateCacheRef.current.get(envKey);
+    if (!cached) {
+      return;
+    }
+
+    setBaseRunLocation(cached.baseRunLocation);
+    setRunLocation(cached.runLocation);
+    setJobName(cached.jobName);
+    setLocationPickedByUser(cached.locationPickedByUser);
+    setGlobalFiles(cached.globalFiles);
+
+    if (composerRef.current && cached.formData) {
+      composerRef.current.setValues(cached.formData);
+    }
+  }
+
+  function requestStep2Restore(envKey = getEnvironmentKey(environment)) {
+    if (!envKey || !hasStep2StateForEnv(envKey)) {
+      return;
+    }
+    pendingStep2RestoreKeyRef.current = envKey;
   }
 
   useEffect(() => {
@@ -105,6 +163,19 @@ export function App() {
 
     fetchSchema();
   }, [environment, fieldsLoadedResolver]);
+
+  useEffect(() => {
+    const envKey = pendingStep2RestoreKeyRef.current;
+    if (!envKey || workflowStep !== 2) {
+      return;
+    }
+    if (!fields || Object.keys(fields).length === 0) {
+      return;
+    }
+
+    restoreStep2State(envKey);
+    pendingStep2RestoreKeyRef.current = null;
+  }, [fields, workflowStep, environment]);
 
   function handleEnvChange(key, option) {
     setEnvironment({
@@ -157,6 +228,7 @@ export function App() {
         composerRef.current.setValues(row.form_data);
       }
 
+      setJobName(promptData.jobName);
       setRerunInfo({
         ...row,
         name: promptData.jobName,
@@ -248,6 +320,28 @@ export function App() {
     });
   };
 
+  const handleRemoveEnvironment = (envToRemove) => {
+    const name = envToRemove.value || envToRemove.env || envToRemove.label;
+
+    setEnvironments((prevEnvironments) =>
+      prevEnvironments.filter((env) => {
+        const existingName = env.value || env.env || env.label;
+        return existingName !== name;
+      })
+    );
+
+    if (environment.env === name) {
+      setEnvironment({ env: "", src: "" });
+      const params = new URLSearchParams(window.location.search);
+      params.delete("environment");
+      const query = params.toString();
+      const newUrl = query
+        ? `${window.location.pathname}?${query}`
+        : window.location.pathname;
+      window.history.pushState({}, "", newUrl);
+    }
+  };
+
   function handlePreview() {
     setJobStatus("new");
     const formData = new FormData(formRef.current);
@@ -272,6 +366,7 @@ export function App() {
     return preview_job(action, formData)
       .then((jobScript) => {
         setDronaJobId(jobScript["drona_job_id"] || null);
+        setJobName(jobScript["name"] || "");
 
         if (jobScript["location"]) {
           setRunLocation(jobScript["location"]);
@@ -306,6 +401,9 @@ export function App() {
         }
 
         setPanes(newPanes);
+        setPreviewPanesSnapshot(
+          newPanes.map(({ name, content }) => ({ name, content: content ?? "" }))
+        );
         setMessages(jobScript["messages"]);
         return jobScript;
       })
@@ -328,6 +426,7 @@ export function App() {
           messages={messages}
           panes={panes}
           setPanes={setPanes}
+          previewPanesSnapshot={previewPanesSnapshot}
           jobStatus={jobStatus}
           globalFiles={globalFiles}
           handlePreview={handlePreview}
@@ -343,11 +442,17 @@ export function App() {
           setBaseRunLocation={setBaseRunLocation}
           dronaJobId={dronaJobId}
           setDronaJobId={setDronaJobId}
+          jobName={jobName}
           setLocationPickedByUser={setLocationPickedByUser}
           locationPickedByUser={locationPickedByUser}
           workflowStep={workflowStep}
           setWorkflowStep={setWorkflowStep}
           onAddEnvironment={handleAddEnvironment}
+          onRemoveEnvironment={handleRemoveEnvironment}
+          captureStep2State={captureStep2State}
+          requestStep2Restore={requestStep2Restore}
+          hasStep2StateForEnv={hasStep2StateForEnv}
+          getEnvironmentKey={getEnvironmentKey}
         />
         {showRerunModal && (
           <RerunPromptModal

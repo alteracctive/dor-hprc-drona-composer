@@ -6,6 +6,18 @@ import {
   getDronaWfeTargetPath,
   saveDronaDir,
 } from "./ConfigGate";
+import {
+  APPEARANCE_CLASSIC,
+  APPEARANCE_MODERN,
+  readAppearance,
+  readCompactModeShowMeta,
+  readHighContrastTooltip,
+  readWarnOnPreviewScriptChanges,
+  saveAppearance,
+  saveCompactModeShowMeta,
+  saveHighContrastTooltip,
+  saveWarnOnPreviewScriptChanges,
+} from "./userPreferences";
 
 const PICKER_PROPS = {
   showFiles: false,
@@ -128,6 +140,12 @@ export default function SettingsPage() {
   const [pendingPath, setPendingPath] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [appearance, setAppearance] = useState(readAppearance);
+  const [showCompactMeta, setShowCompactMeta] = useState(readCompactModeShowMeta);
+  const [warnOnPreviewScriptChanges, setWarnOnPreviewScriptChanges] = useState(
+    readWarnOnPreviewScriptChanges
+  );
+  const [highContrastTooltip, setHighContrastTooltip] = useState(readHighContrastTooltip);
 
   useEffect(() => {
     (async () => {
@@ -168,6 +186,22 @@ export default function SettingsPage() {
     if (isSaving) return;
     setShowConfirm(false);
     setPendingPath("");
+  }
+
+  function handleAppearanceChange(nextAppearance) {
+    setAppearance(saveAppearance(nextAppearance));
+  }
+
+  function handleCompactMetaChange(show) {
+    setShowCompactMeta(saveCompactModeShowMeta(show));
+  }
+
+  function handleWarnOnPreviewScriptChangesChange(show) {
+    setWarnOnPreviewScriptChanges(saveWarnOnPreviewScriptChanges(show));
+  }
+
+  function handleHighContrastTooltipChange(enabled) {
+    setHighContrastTooltip(saveHighContrastTooltip(enabled));
   }
 
   async function handleConfirmSave() {
@@ -272,6 +306,138 @@ export default function SettingsPage() {
             </span>
           </div>
         )}
+      </div>
+
+      <div className="settings-page__row settings-page__row--static">
+        <div className="settings-page__row-view">
+          <span className="settings-page__row-label">Appearance</span>
+          <div
+            className="settings-page__choice-group"
+            role="group"
+            aria-label="Appearance"
+          >
+            <button
+              type="button"
+              className={`btn btn-sm settings-page__choice-btn${
+                appearance === APPEARANCE_CLASSIC ? " settings-page__choice-btn--active" : ""
+              }`}
+              aria-pressed={appearance === APPEARANCE_CLASSIC}
+              onClick={() => handleAppearanceChange(APPEARANCE_CLASSIC)}
+            >
+              Classic
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm settings-page__choice-btn${
+                appearance === APPEARANCE_MODERN ? " settings-page__choice-btn--active" : ""
+              }`}
+              aria-pressed={appearance === APPEARANCE_MODERN}
+              onClick={() => handleAppearanceChange(APPEARANCE_MODERN)}
+            >
+              Modern
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-page__row settings-page__row--static">
+        <div className="settings-page__row-view">
+          <span className="settings-page__row-label">
+            Display Category and Organization in Compact Mode
+          </span>
+          <div
+            className="settings-page__choice-group"
+            role="group"
+            aria-label="Display Category and Organization in Compact Mode"
+          >
+            <button
+              type="button"
+              className={`btn btn-sm settings-page__choice-btn${
+                showCompactMeta ? " settings-page__choice-btn--active" : ""
+              }`}
+              aria-pressed={showCompactMeta}
+              onClick={() => handleCompactMetaChange(true)}
+            >
+              On
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm settings-page__choice-btn${
+                !showCompactMeta ? " settings-page__choice-btn--active" : ""
+              }`}
+              aria-pressed={!showCompactMeta}
+              onClick={() => handleCompactMetaChange(false)}
+            >
+              Off
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-page__row settings-page__row--static">
+        <div className="settings-page__row-view">
+          <span className="settings-page__row-label">
+            Warn before leaving preview with unsaved script changes
+          </span>
+          <div
+            className="settings-page__choice-group"
+            role="group"
+            aria-label="Warn before leaving preview with unsaved script changes"
+          >
+            <button
+              type="button"
+              className={`btn btn-sm settings-page__choice-btn${
+                warnOnPreviewScriptChanges ? " settings-page__choice-btn--active" : ""
+              }`}
+              aria-pressed={warnOnPreviewScriptChanges}
+              onClick={() => handleWarnOnPreviewScriptChangesChange(true)}
+            >
+              On
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm settings-page__choice-btn${
+                !warnOnPreviewScriptChanges ? " settings-page__choice-btn--active" : ""
+              }`}
+              aria-pressed={!warnOnPreviewScriptChanges}
+              onClick={() => handleWarnOnPreviewScriptChangesChange(false)}
+            >
+              Off
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-page__row settings-page__row--static">
+        <div className="settings-page__row-view">
+          <span className="settings-page__row-label">High contrast tooltips</span>
+          <div
+            className="settings-page__choice-group"
+            role="group"
+            aria-label="High contrast tooltips"
+          >
+            <button
+              type="button"
+              className={`btn btn-sm settings-page__choice-btn${
+                highContrastTooltip ? " settings-page__choice-btn--active" : ""
+              }`}
+              aria-pressed={highContrastTooltip}
+              onClick={() => handleHighContrastTooltipChange(true)}
+            >
+              On
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm settings-page__choice-btn${
+                !highContrastTooltip ? " settings-page__choice-btn--active" : ""
+              }`}
+              aria-pressed={!highContrastTooltip}
+              onClick={() => handleHighContrastTooltipChange(false)}
+            >
+              Off
+            </button>
+          </div>
+        </div>
       </div>
 
       <ChangeLocationConfirmModal

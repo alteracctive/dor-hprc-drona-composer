@@ -1,22 +1,30 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
-export const useResizeHandle = (initialWidth = 55) => {
+export const useResizeHandle = (initialWidth = 55, containerRef = null) => {
   const [leftWidth, setLeftWidth] = useState(initialWidth);
   const [isResizing, setIsResizing] = useState(false);
+  const fallbackRef = useRef(null);
 
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
     setIsResizing(true);
   }, []);
 
-  const handleMouseMove = useCallback((e, modalRef) => {
-    if (!isResizing || !modalRef.current) return;
-    const modalRect = modalRef.current.getBoundingClientRect();
-    const newLeftWidth = ((e.clientX - modalRect.left) / modalRect.width) * 100;
+  const handleMouseMove = useCallback((e) => {
+    if (!isResizing) return;
+
+    const container =
+      containerRef?.current ??
+      fallbackRef.current ??
+      document.querySelector('[data-modal-ref]');
+    if (!container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
     if (newLeftWidth >= 20 && newLeftWidth <= 80) {
       setLeftWidth(newLeftWidth);
     }
-  }, [isResizing]);
+  }, [isResizing, containerRef]);
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
@@ -24,15 +32,13 @@ export const useResizeHandle = (initialWidth = 55) => {
 
   useEffect(() => {
     if (isResizing) {
-      const moveHandler = (e) => handleMouseMove(e, { current: document.querySelector('[data-modal-ref]') });
-      
-      document.addEventListener('mousemove', moveHandler);
+      document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       document.body.style.cursor = 'ew-resize';
       document.body.style.userSelect = 'none';
 
       return () => {
-        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
@@ -43,6 +49,7 @@ export const useResizeHandle = (initialWidth = 55) => {
   return {
     leftWidth,
     isResizing,
-    handleMouseDown
+    handleMouseDown,
+    fallbackRef,
   };
 };

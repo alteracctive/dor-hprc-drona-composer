@@ -124,12 +124,12 @@ function SortableElement({
     className="btn btn-sm"
     style={{
       fontSize: "0.75rem",
-      backgroundColor: "maroon",
+      backgroundColor: "#500000",
       color: "white",
       border: "none"
     }}
     onMouseOver={(e) => e.target.style.backgroundColor = '#500000'}
-    onMouseOut={(e) => e.target.style.backgroundColor = 'maroon'}
+    onMouseOut={(e) => e.target.style.backgroundColor = '#500000'}
     title="Remove element"
   >
     Remove
@@ -157,12 +157,12 @@ function DropZone({
       style={{
         minHeight: "400px",
         backgroundColor: isOver ? "#f0f8ff" : "#fafafa",
-        borderColor: isOver ? "maroon" : "#500000",
+        borderColor: "#500000",
         transition: "all 0.3s ease"
       }}
     >
       <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-        <h5 className="mb-0 fw-semibold" style={{ color: "maroon" }}>
+        <h5 className="mb-0 fw-semibold" style={{ color: "#500000" }}>
           Selected Elements: 
         </h5>
         <span className="text-muted" style={{ fontSize: "0.8rem" }}>

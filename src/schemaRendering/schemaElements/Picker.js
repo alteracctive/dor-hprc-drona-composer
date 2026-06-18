@@ -32,9 +32,50 @@
  * @property {string} [help] - Help text displayed below the input
  */
 
-import React, { useEffect, useMemo, useState, useRef, useContext } from "react";
+import React, { useEffect, useMemo, useState, useRef, useContext, useCallback } from "react";
 import { GlobalFilesContext } from "../../GlobalFilesContext";
 import FormElementWrapper from "../utils/FormElementWrapper"
+
+function buildBreadcrumbs(path) {
+  if (!path) {
+    return [];
+  }
+
+  const parts = path.split("/").filter(Boolean);
+  const crumbs = [];
+  let acc = "";
+
+  for (const part of parts) {
+    acc = acc ? `${acc}/${part}` : `/${part}`;
+    crumbs.push({ label: part, path: acc });
+  }
+
+  return crumbs;
+}
+
+function isSidebarPathActive(currentPath, suggestedPath) {
+  if (!suggestedPath) {
+    return false;
+  }
+
+  return currentPath === suggestedPath;
+}
+
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+    </svg>
+  );
+}
+
+function SaveIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
+    </svg>
+  );
+}
 
 function Picker(props) {
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -99,11 +140,16 @@ function Picker(props) {
       });
   }, [props.defaultPaths, props.useHPCDefaultPaths]);
 
-
-  function handleMainClick(event) {
-    let fullPath = event.target.value;
+  const loadDirectory = useCallback((fullPath) => {
     setCurrentPath(fullPath);
-    fetch(
+
+    if (!fullPath) {
+      setSubDirs([]);
+      setSubFiles([]);
+      return Promise.resolve();
+    }
+
+    return fetch(
       document.dashboard_url +
       "/jobs/composer/subdirectories?path=" +
       encodeURIComponent(fullPath),
@@ -127,39 +173,17 @@ function Picker(props) {
         setSubDirs(subdirs);
         setSubFiles(subfiles);
       });
+  }, []);
+
+  function handleSuggestedPathClick(fullPath) {
+    loadDirectory(fullPath);
   }
 
-  function handleSubDirsClick(event) {
-    const fullPath = event.target.value;
-    setCurrentPath(fullPath);
-    fetch(
-      document.dashboard_url +
-      "/jobs/composer/subdirectories?path=" +
-      encodeURIComponent(fullPath),
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const subdirs = Object.entries(data.subdirectories).map((path) => [
-          path[1],
-          fullPath + "/" + path[1],
-        ]);
-        const subfiles = Object.entries(data.subfiles).map((path) => [
-          path[1],
-          fullPath + "/" + path[1],
-        ]);
-        setSubDirs(subdirs);
-        setSubFiles(subfiles);
-      });
+  function handleFolderClick(fullPath) {
+    loadDirectory(fullPath);
   }
 
-  function handleSubFilesClick(event) {
-    const fullPath = event.target.value;
+  function handleFileClick(fullPath) {
     setCurrentPath(fullPath);
     setSubDirs([]);
     setSubFiles([]);
@@ -169,38 +193,13 @@ function Picker(props) {
     const pathParts = currentPath.split("/");
     pathParts.pop();
     const newPath = pathParts.join("/");
-    setCurrentPath(newPath);
+    loadDirectory(newPath);
+  }
 
-    if (newPath === "") {
-      setSubDirs([]);
-      setSubFiles([]);
-      return;
+  function handleBreadcrumbClick(path) {
+    if (path !== currentPath) {
+      loadDirectory(path);
     }
-
-    fetch(
-      document.dashboard_url +
-      "/jobs/composer/subdirectories?path=" +
-      encodeURIComponent(newPath),
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const subdirs = Object.entries(data.subdirectories).map((path) => [
-          path[1],
-          newPath + "/" + path[1],
-        ]);
-        const subfiles = Object.entries(data.subfiles).map((path) => [
-          path[1],
-          newPath + "/" + path[1],
-        ]);
-        setSubDirs(subdirs);
-        setSubFiles(subfiles);
-      });
   }
 
   function handleSaveChange() {
@@ -257,10 +256,36 @@ function Picker(props) {
   }, []);
 
   const currentLabel = pickerMode === "local" ? props.localLabel : props.remoteLabel;
+  const breadcrumbs = useMemo(() => buildBreadcrumbs(currentPath), [currentPath]);
+  const isListEmpty = subDirs.length === 0 && (!isShowFiles || subFiles.length === 0);
+
+  function initializePickerFromValue(selectedPath) {
+    const trimmed = (selectedPath || "").trim();
+
+    if (!trimmed) {
+      setCurrentPath("");
+      setSubDirs([]);
+      setSubFiles([]);
+      return;
+    }
+
+    if (isShowFiles && trimmed.includes("/")) {
+      const parentPath = trimmed.slice(0, trimmed.lastIndexOf("/"));
+      if (parentPath) {
+        loadDirectory(parentPath).then(() => {
+          setCurrentPath(trimmed);
+        });
+        return;
+      }
+    }
+
+    loadDirectory(trimmed);
+  }
 
   function handleMainButtonClick() {
     if (props.disableChange) return;
     if (pickerMode === "local") {
+      initializePickerFromValue(value);
       const modalEl = document.getElementById("local-file-picker-modal-" + props.name);
       if (modalEl && window.$) window.$(modalEl).modal("show");
     } else {
@@ -360,7 +385,7 @@ function Picker(props) {
           <input
             type="text"
             name={props.name}
-            id={props.id}
+            id={props.id || props.name}
             value={value}
             className="form-control"
             onChange={handleValueChange}
@@ -378,87 +403,135 @@ function Picker(props) {
         aria-labelledby="localFilePickerModal"
         aria-hidden="true"
       >
-        <div className="modal-dialog modal-lg" role="document">
+        <div className="modal-dialog modal-xl" role="document">
           <div className="modal-content">
             <div className="modal-header" style={{ position: "sticky", top: "0", zIndex: "3" }}>
               <h5 className="modal-title" id="exampleModalLabel">
                 {props.label}
               </h5>
-              <div className="d-flex align-items-center">
+              <div className="file-picker-modal__actions">
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className="btn btn-secondary file-picker-modal__btn"
                   data-dismiss="modal"
                 >
-                  Close
+                  <CloseIcon />
+                  <span>Close</span>
                 </button>
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className="btn btn-primary file-picker-modal__btn"
                   data-dismiss="modal"
                   onClick={handleSaveChange}
                 >
-                  Save changes
+                  <SaveIcon />
+                  <span>Save changes</span>
                 </button>
               </div>
             </div>
-            <div className="modal-body">
-              <div className="container">
-                <div className="form-group row">
-                  <input
-                    type="text"
-                    value={currentPath}
-                    className="form-control col-lg-10"
-                    readOnly
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-secondary col-lg-2"
-                    onClick={handleBackClick}
-                  >
-                    Back
-                  </button>
-                </div>
-                {mainPaths.map((path) => (
-                  <button
-                    key={path[1]}
-                    type="button"
-                    className="btn btn-primary"
-                    value={path[1]}
-                    onClick={handleMainClick}
-                    style={{ marginRight: "2px", marginBottom: "2px" }}
-                  >
-                    {path[0]}
-                  </button>
-                ))}
-                <br />
-                <div>
-                  {subDirs.map((path) => (
-                    <button
-                      key={path[1]}
-                      type="button"
-                      className="btn btn-outline-primary"
-                      value={path[1]}
-                      onClick={handleSubDirsClick}
-                      style={{ marginRight: "2px", marginBottom: "2px" }}
-                    >
-                      {path[0]}
-                    </button>
-                  ))}
-                  {isShowFiles &&
-                    subFiles.map((path) => (
+            <div className="modal-body p-0">
+              <div className="file-picker-explorer">
+                <aside className="file-picker-explorer__sidebar" aria-label="Suggested directories">
+                  <div className="file-picker-explorer__sidebar-title">Suggested</div>
+                  <nav className="file-picker-explorer__sidebar-nav">
+                    {mainPaths.map(([label, fullPath]) => (
                       <button
-                        key={path[1]}
+                        key={fullPath}
                         type="button"
-                        className="btn btn-outline-secondary"
-                        value={path[1]}
-                        onClick={handleSubFilesClick}
-                        style={{ marginRight: "2px", marginBottom: "2px" }}
+                        className={`file-picker-explorer__sidebar-item${
+                          isSidebarPathActive(currentPath, fullPath)
+                            ? " file-picker-explorer__sidebar-item--active"
+                            : ""
+                        }`}
+                        onClick={() => handleSuggestedPathClick(fullPath)}
                       >
-                        {path[0]}
+                        <span className="file-picker-explorer__icon file-picker-explorer__icon--folder" aria-hidden="true" />
+                        <span className="file-picker-explorer__sidebar-label">{label}</span>
                       </button>
                     ))}
-                  <br />
+                  </nav>
+                </aside>
+
+                <div className="file-picker-explorer__main">
+                  <div className="file-picker-explorer__toolbar">
+                    <button
+                      type="button"
+                      className="file-picker-explorer__back-btn"
+                      onClick={handleBackClick}
+                      disabled={!currentPath}
+                      aria-label="Go back"
+                    >
+                      <span className="file-picker-explorer__back-icon" aria-hidden="true">←</span>
+                      <span className="file-picker-explorer__back-label">Back</span>
+                    </button>
+                    <div className="file-picker-explorer__breadcrumb" aria-label="Current path">
+                      {breadcrumbs.length === 0 ? (
+                        <span className="file-picker-explorer__breadcrumb-current">Select a folder</span>
+                      ) : (
+                        breadcrumbs.map((crumb, index) => (
+                          <React.Fragment key={crumb.path}>
+                            {index > 0 && (
+                              <span className="file-picker-explorer__breadcrumb-separator" aria-hidden="true">
+                                /
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              className={`file-picker-explorer__breadcrumb-item${
+                                index === breadcrumbs.length - 1
+                                  ? " file-picker-explorer__breadcrumb-item--current"
+                                  : ""
+                              }`}
+                              onClick={() => handleBreadcrumbClick(crumb.path)}
+                              disabled={index === breadcrumbs.length - 1}
+                            >
+                              {crumb.label}
+                              {index === breadcrumbs.length - 1 ? " /" : ""}
+                            </button>
+                          </React.Fragment>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="file-picker-explorer__list" role="listbox" aria-label="Files and folders">
+                    {isListEmpty && currentPath && (
+                      <div className="file-picker-explorer__empty">This folder is empty</div>
+                    )}
+                    {!currentPath && (
+                      <div className="file-picker-explorer__empty">
+                        Choose a suggested directory or use the toolbar to browse
+                      </div>
+                    )}
+                    {subDirs.map(([name, fullPath]) => (
+                      <button
+                        key={fullPath}
+                        type="button"
+                        role="option"
+                        className="file-picker-explorer__row file-picker-explorer__row--folder"
+                        onClick={() => handleFolderClick(fullPath)}
+                      >
+                        <span className="file-picker-explorer__icon file-picker-explorer__icon--folder" aria-hidden="true" />
+                        <span className="file-picker-explorer__row-name">{name}</span>
+                      </button>
+                    ))}
+                    {isShowFiles &&
+                      subFiles.map(([name, fullPath]) => (
+                        <button
+                          key={fullPath}
+                          type="button"
+                          role="option"
+                          aria-selected={currentPath === fullPath}
+                          className={`file-picker-explorer__row file-picker-explorer__row--file${
+                            currentPath === fullPath ? " file-picker-explorer__row--selected" : ""
+                          }`}
+                          onClick={() => handleFileClick(fullPath)}
+                        >
+                          <span className="file-picker-explorer__icon file-picker-explorer__icon--file" aria-hidden="true" />
+                          <span className="file-picker-explorer__row-name">{name}</span>
+                        </button>
+                      ))}
+                  </div>
                 </div>
               </div>
             </div>

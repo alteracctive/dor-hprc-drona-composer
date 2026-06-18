@@ -94,12 +94,12 @@ function RadioGroup(props) {
           name={props.name}
           checked={isSelected}
           onChange={handleValueChange}
-          style={{ accentColor: "maroon" }}
+          style={{ accentColor: "#500000" }}
         />
         <label
           className="form-check-label"
           htmlFor={optionId}
-          style={{ color: isSelected ? "maroon" : "inherit" }}
+          style={{ color: isSelected ? "#500000" : "inherit" }}
         >
           {option.label}
         </label>

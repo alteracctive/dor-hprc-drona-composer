@@ -43,7 +43,7 @@ const ErrorAlert = ({ error, onClose }) => {
       }}>
         {/* Header */}
         <div style={{
-          color: 'maroon',
+          color: '#500000',
           marginBottom: '15px',
           paddingBottom: '10px',
           borderBottom: '1px solid #eee',

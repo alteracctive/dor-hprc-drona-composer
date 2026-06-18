@@ -121,7 +121,7 @@ export default function ConfigGate(props) {
           <div className="drona-dir-picker">
             <Picker
               name="dronaDirPicker"
-              label=""
+              label="Drona storage directory"
               localLabel="Select"
               showFiles={false}
               defaultLocation=""

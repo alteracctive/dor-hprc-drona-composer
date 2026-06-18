@@ -4,6 +4,47 @@ import { useResizeHandle } from "./hooks/useResizeHandle";
 import PreviewPanel from "./PreviewPanel";
 import StreamingPanel from "./StreamingPanel";
 
+const step3StreamingStyles = {
+  ...styles,
+  rightPane: {
+    ...styles.rightPane,
+    backgroundColor: "#000",
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+  },
+  rightPaneTitle: {
+    ...styles.rightPaneTitle,
+    backgroundColor: "#500000",
+    height: "36px",
+    minHeight: "36px",
+    padding: "0 12px",
+    boxSizing: "border-box",
+  },
+  streamingContent: {
+    ...styles.streamingContent,
+    backgroundColor: "#000",
+    color: "#fff",
+  },
+  streamingPre: {
+    ...styles.streamingPre,
+    backgroundColor: "transparent",
+    color: "#fff",
+  },
+  placeholder: {
+    ...styles.placeholder,
+    color: "rgba(255, 255, 255, 0.85)",
+    title: {
+      ...styles.placeholder.title,
+      color: "#fff",
+    },
+    subtitle: {
+      ...styles.placeholder.subtitle,
+      color: "rgba(255, 255, 255, 0.7)",
+    },
+  },
+};
+
 const ResizeHandle = ({ isResizing, onMouseDown }) => (
   <div
     style={isResizing ? styles.resizeHandle.active : styles.resizeHandle.base}
@@ -32,8 +73,9 @@ function JobPreviewStep({
   onBack,
 }) {
   const contentRef = useRef(null);
+  const panelsRef = useRef(null);
   const [outputCollapsed, setOutputCollapsed] = React.useState(false);
-  const { leftWidth, isResizing, handleMouseDown } = useResizeHandle(55);
+  const { leftWidth, isResizing, handleMouseDown } = useResizeHandle(55, panelsRef);
 
   useEffect(() => {
     if (contentRef.current) {
@@ -60,7 +102,11 @@ function JobPreviewStep({
         </div>
       </div>
 
-      <div className="job-preview-step__panels" style={styles.contentContainer}>
+      <div
+        ref={panelsRef}
+        className="job-preview-step__panels"
+        style={styles.contentContainer}
+      >
         <PreviewPanel
           leftWidth={outputCollapsed ? 100 : leftWidth}
           messages={messages}
@@ -79,7 +125,7 @@ function JobPreviewStep({
           htmlOutput={htmlOutput}
           outputLines={outputLines}
           contentRef={contentRef}
-          styles={styles}
+          styles={step3StreamingStyles}
           isFullscreen={false}
           isCollapsed={outputCollapsed}
           onToggleCollapse={() => setOutputCollapsed((c) => !c)}

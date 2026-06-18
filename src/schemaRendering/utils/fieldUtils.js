@@ -122,3 +122,23 @@ export const validateRequiredFields = (fields) => {
     }))
   };
 };
+
+export const fieldsToFormData = (fields) => {
+  const result = {};
+
+  const collect = (fieldList) => {
+    if (!fieldList || !Array.isArray(fieldList)) return;
+
+    for (const field of fieldList) {
+      if (field?.name) {
+        result[field.name] = field.value;
+      }
+      if (field.elements) {
+        collect(field.elements);
+      }
+    }
+  };
+
+  collect(fields);
+  return result;
+};

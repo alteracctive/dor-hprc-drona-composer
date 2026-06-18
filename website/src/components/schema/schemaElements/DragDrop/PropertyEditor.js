@@ -152,7 +152,7 @@ function PropertyEditor({ element, template, onSave, onCancel }) {
         }}>
           <h4 style={{
             margin: 0,
-            color: "maroon",
+            color: "#500000",
             fontWeight: "600"
           }}>
             Edit {template.label}
@@ -228,7 +228,7 @@ function PropertyEditor({ element, template, onSave, onCancel }) {
             marginBottom: "0.75rem",
             fontSize: "0.9rem",
             fontWeight: "600",
-            color: "maroon"
+            color: "#500000"
           }}>
             Preview
           </h6>
@@ -271,7 +271,7 @@ function PropertyEditor({ element, template, onSave, onCancel }) {
             onClick={handleSave}
             style={{
               padding: "0.5rem 1rem",
-              backgroundColor: "maroon",
+              backgroundColor: "#500000",
               color: "white",
               border: "none",
               borderRadius: "0.25rem",

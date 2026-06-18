@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
+import ReactDOM from "react-dom";
 import { getEnvironmentIconUrl, getEnvironmentInitial, getEnvironmentEmoji } from "./EnvironmentIcons";
+import {
+  PREFERENCES_CHANGED_EVENT,
+  readCompactModeShowMeta,
+} from "./userPreferences";
 
 const COMPACT_MODE_STORAGE_KEY = "drona_composer_environment_compact_mode";
 
@@ -49,10 +54,152 @@ function ReadyButton({ onClick }) {
   );
 }
 
-function ImportEnvironmentButton({ env, isImported, onImport, onReady }) {
+function TrashIcon() {
+  return (
+    <svg
+      className="env-remove-btn__icon"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg
+      className="env-import-btn__icon"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+    </svg>
+  );
+}
+
+function RemoveButton({ onClick, disabled = false }) {
+  return (
+    <button
+      type="button"
+      className="btn btn-sm env-remove-btn"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <TrashIcon />
+      Remove
+    </button>
+  );
+}
+
+function EnvironmentActions({ isCompactMode, onReady, onRemove, showRemove = false }) {
+  const groupClass = isCompactMode ? "env-action-group--compact" : "env-action-group--detail";
+
+  return (
+    <div className={`env-action-group ${groupClass}`}>
+      <ReadyButton onClick={onReady} />
+      {showRemove && onRemove && <RemoveButton onClick={onRemove} />}
+    </div>
+  );
+}
+
+function ModalPortal({ children }) {
+  const el = useMemo(() => document.createElement("div"), []);
+
+  useEffect(() => {
+    document.body.appendChild(el);
+    return () => {
+      document.body.removeChild(el);
+    };
+  }, [el]);
+
+  return ReactDOM.createPortal(children, el);
+}
+
+function RemoveEnvironmentModal({ envName, isRemoving, onConfirm, onCancel }) {
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget && !isRemoving) {
+      onCancel();
+    }
+  };
+
+  return (
+    <ModalPortal>
+      <div
+        className="modal fade show"
+        tabIndex="-1"
+        onClick={handleBackdropClick}
+        style={{
+          display: "block",
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 1050,
+        }}
+      >
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Remove Environment</h5>
+              <button
+                type="button"
+                className="close"
+                onClick={onCancel}
+                disabled={isRemoving}
+                aria-label="Close"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="mb-0">
+                Are you sure you want to remove <strong>{envName}</strong>?
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onCancel}
+                disabled={isRemoving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn env-remove-btn"
+                onClick={onConfirm}
+                disabled={isRemoving}
+              >
+                {isRemoving ? "Removing..." : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+}
+
+function ImportEnvironmentButton({ env, isImported, isCompactMode, onImport, onReady, onRemove }) {
   const [isImporting, setIsImporting] = useState(false);
   const [justImported, setJustImported] = useState(false);
   const ready = isImported || justImported;
+
+  useEffect(() => {
+    if (!isImported) {
+      setJustImported(false);
+    }
+  }, [isImported]);
 
   const handleImport = () => {
     setIsImporting(true);
@@ -72,7 +219,16 @@ function ImportEnvironmentButton({ env, isImported, onImport, onReady }) {
       });
   };
 
-  if (ready) return <ReadyButton onClick={() => onReady(env)} />;
+  if (ready) {
+    return (
+      <EnvironmentActions
+        isCompactMode={isCompactMode}
+        onReady={() => onReady(env)}
+        onRemove={onRemove ? () => onRemove(env) : null}
+        showRemove
+      />
+    );
+  }
   if (isImporting) {
     return (
       <button type="button" className="btn btn-primary btn-sm" disabled>
@@ -82,7 +238,8 @@ function ImportEnvironmentButton({ env, isImported, onImport, onReady }) {
     );
   }
   return (
-    <button type="button" className="btn btn-primary btn-sm maroon-button" onClick={handleImport}>
+    <button type="button" className="btn btn-primary btn-sm maroon-button env-import-btn" onClick={handleImport}>
+      <DownloadIcon />
       Import
     </button>
   );
@@ -214,6 +371,7 @@ function EnvironmentCompactGrid({
   getRowKey,
   getEnvName,
   getEnvStyle,
+  showMeta,
 }) {
   const sortedRows = useMemo(
     () => sortRows(rows, sortColumn, sortDirection),
@@ -236,10 +394,12 @@ function EnvironmentCompactGrid({
             </div>
             <span className="env-compact-card__version">{row.version || "N/A"}</span>
           </div>
-          <div className="env-compact-card__meta-row">
-            <span className="env-compact-card__category">{row.category || "N/A"}</span>
-            <span className="env-compact-card__organization">{row.organization || "N/A"}</span>
-          </div>
+          {showMeta && (
+            <div className="env-compact-card__meta-row">
+              <span className="env-compact-card__category">{row.category || "N/A"}</span>
+              <span className="env-compact-card__organization">{row.organization || "N/A"}</span>
+            </div>
+          )}
           <div className="env-compact-card__action">{renderAction(row)}</div>
         </article>
       ))}
@@ -247,7 +407,7 @@ function EnvironmentCompactGrid({
   );
 }
 
-function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironment }) {
+function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironment, onRemoveEnvironment }) {
   const [repoEnvironments, setRepoEnvironments] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -258,6 +418,9 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
   const [isCompactMode, setIsCompactMode] = useState(readCompactModePreference);
+  const [showCompactMeta, setShowCompactMeta] = useState(readCompactModeShowMeta);
+  const [pendingRemoveEnv, setPendingRemoveEnv] = useState(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const toggleCompactMode = () => {
     setIsCompactMode((prev) => {
@@ -327,6 +490,48 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
     onSelectEnvironment({ value: env.value, label: env.label, src: env.src });
   };
 
+  const openRemoveModal = (env) => {
+    setPendingRemoveEnv(env);
+  };
+
+  const closeRemoveModal = () => {
+    if (!isRemoving) {
+      setPendingRemoveEnv(null);
+    }
+  };
+
+  const handleRemoveConfirm = async () => {
+    if (!pendingRemoveEnv || !onRemoveEnvironment) return;
+
+    const name =
+      pendingRemoveEnv.value || pendingRemoveEnv.env || pendingRemoveEnv.label;
+
+    setIsRemoving(true);
+    try {
+      const response = await fetch(
+        `${document.dashboard_url}/jobs/composer/environment`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ env: name }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok || data.status !== "Success") {
+        const detail =
+          data.message || data.details?.error || "Failed to remove environment";
+        throw new Error(detail);
+      }
+      onRemoveEnvironment(pendingRemoveEnv);
+      setPendingRemoveEnv(null);
+    } catch (error) {
+      console.error("Error removing environment:", error);
+      alert(`Error removing environment: ${error.message}`);
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   const handleImport = (env) => {
     const formData = new FormData();
     formData.append("env", env.env);
@@ -377,6 +582,17 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
       });
   }, []);
 
+  useEffect(() => {
+    const handlePreferencesChanged = () => {
+      setShowCompactMeta(readCompactModeShowMeta());
+    };
+
+    window.addEventListener(PREFERENCES_CHANGED_EVENT, handlePreferencesChanged);
+    return () => {
+      window.removeEventListener(PREFERENCES_CHANGED_EVENT, handlePreferencesChanged);
+    };
+  }, []);
+
   const resetFilters = () => {
     setSearchTerm("");
     setCategoryFilter("");
@@ -394,12 +610,15 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
     onSort: handleSort,
     getRowKey: (row) => row.env,
     getEnvName: (row) => row.env,
+    showMeta: showCompactMeta,
     renderAction: (row) => (
       <ImportEnvironmentButton
         env={row}
         isImported={isImported(row.env)}
+        isCompactMode={isCompactMode}
         onImport={handleImport}
         onReady={handleReady}
+        onRemove={openRemoveModal}
       />
     ),
   };
@@ -447,19 +666,27 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
 
   return (
     <div className="environment-step">
-      <div className="environment-step__filters row align-items-center">
-        <div className="col-md-3 col-12 mb-2 mb-md-0">
+      <div className="environment-step__filters row align-items-center no-gutters">
+        <div className="col-md-5 col-12 mb-2 mb-md-0 environment-step__filter-field">
+          <label htmlFor="environment-search" className="sr-only">
+            Search environments
+          </label>
           <input
             type="text"
-            className="form-control"
+            id="environment-search"
+            className="form-control environment-step__filter-control"
             placeholder="Search environments..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="col-md-2 col-6 mb-2 mb-md-0">
+        <div className="col-md-auto col-6 mb-2 mb-md-0 environment-step__filter-field environment-step__filter-field--select">
+          <label htmlFor="environment-category-filter" className="sr-only">
+            Filter by category
+          </label>
           <select
-            className="form-control"
+            id="environment-category-filter"
+            className="form-control environment-step__filter-control environment-step__filter-select"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
@@ -471,9 +698,13 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
             ))}
           </select>
         </div>
-        <div className="col-md-2 col-6 mb-2 mb-md-0">
+        <div className="col-md-auto col-6 mb-2 mb-md-0 environment-step__filter-field environment-step__filter-field--select">
+          <label htmlFor="environment-organization-filter" className="sr-only">
+            Filter by organization
+          </label>
           <select
-            className="form-control"
+            id="environment-organization-filter"
+            className="form-control environment-step__filter-control environment-step__filter-select"
             value={organizationFilter}
             onChange={(e) => setOrganizationFilter(e.target.value)}
           >
@@ -485,10 +716,10 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
             ))}
           </select>
         </div>
-        <div className="col-md-auto col-12 mb-2 mb-md-0">
+        <div className="col-md-auto col-12 mb-2 mb-md-0 environment-step__filter-field">
           <button
             type="button"
-            className="btn btn-outline-secondary btn-sm"
+            className="btn btn-outline-secondary environment-step__filter-clear"
             onClick={resetFilters}
             disabled={!isFilterActive}
           >
@@ -524,10 +755,24 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
               sortColumn={sortColumn}
               sortDirection={sortDirection}
               onSort={handleSort}
+              showMeta={showCompactMeta}
               getRowKey={(row) => `${row.value}-${row.src}`}
               getEnvName={(row) => row.label}
               getEnvStyle={(row) => row.styles}
-              renderAction={(row) => <ReadyButton onClick={() => handleAvailableReady(row)} />}
+              renderAction={(row) => {
+                const isUserEnv = row.isUserEnv ?? row.is_user_env;
+                if (!isUserEnv) {
+                  return <ReadyButton onClick={() => handleAvailableReady(row)} />;
+                }
+                return (
+                  <EnvironmentActions
+                    isCompactMode={isCompactMode}
+                    onReady={() => handleAvailableReady(row)}
+                    onRemove={() => openRemoveModal(row)}
+                    showRemove
+                  />
+                );
+              }}
             />
           )}
         </section>
@@ -542,6 +787,18 @@ function EnvironmentStep({ environments, onSelectEnvironment, onImportEnvironmen
         <section className="environment-step__section environment-step__section--filter-mode">
           {renderImportCatalog(filteredImportRows, false)}
         </section>
+      )}
+      {pendingRemoveEnv && (
+        <RemoveEnvironmentModal
+          envName={
+            pendingRemoveEnv.value ||
+            pendingRemoveEnv.env ||
+            pendingRemoveEnv.label
+          }
+          isRemoving={isRemoving}
+          onConfirm={handleRemoveConfirm}
+          onCancel={closeRemoveModal}
+        />
       )}
     </div>
   );

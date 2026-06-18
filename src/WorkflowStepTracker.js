@@ -18,6 +18,7 @@ function WorkflowStepTracker({ currentStep, onStepClick, isStepClickable, isStep
         {STEPS.map((step, index) => {
           const isActive = currentStep === step.number;
           const isCompleted = currentStep > step.number;
+          const isConnectorCompleted = index > 0 && currentStep >= step.number;
           const isClickable = canClick(step.number);
           const isDisabled = !isClickable || (isStepDisabled?.(step.number) ?? false);
 
@@ -37,7 +38,7 @@ function WorkflowStepTracker({ currentStep, onStepClick, isStepClickable, isStep
                 <span
                   className={[
                     "workflow-step-tracker__connector",
-                    isCompleted && "workflow-step-tracker__connector--completed",
+                    isConnectorCompleted && "workflow-step-tracker__connector--completed",
                   ]
                     .filter(Boolean)
                     .join(" ")}

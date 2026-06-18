@@ -134,7 +134,7 @@ const ModalFooter = ({ onClose, styles }) => (
   <div style={styles.footer}>
     <button type="submit" form="slurm-config-form" style={styles.button.primary}
       onMouseOver={(e) => e.target.style.backgroundColor = '#500000'}
-      onMouseOut={(e) => e.target.style.backgroundColor = 'maroon'}
+      onMouseOut={(e) => e.target.style.backgroundColor = '#500000'}
     >Submit Job</button>
     <button onClick={onClose} style={styles.button.secondary}
       onMouseOver={(e) => e.target.style.backgroundColor = '#545b62'}

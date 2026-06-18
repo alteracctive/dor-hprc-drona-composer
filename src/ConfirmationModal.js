@@ -98,17 +98,17 @@ const ConfirmationModal = ({
               onClick={onConfirm}
               style={{
                 padding: "0.5rem 1rem",
-                border: "1px solid maroon",
+                border: "1px solid #500000",
                 borderRadius: "0.25rem",
                 cursor: "pointer",
                 fontWeight: "500",
                 fontSize: "14px",
                 transition: "all 0.2s ease",
-                backgroundColor: "maroon",
+                backgroundColor: "#500000",
                 color: "white",
               }}
               onMouseOver={(e) => e.target.style.backgroundColor = '#500000'}
-              onMouseOut={(e) => e.target.style.backgroundColor = 'maroon'}
+              onMouseOut={(e) => e.target.style.backgroundColor = '#500000'}
             >
               {confirmText}
             </button>

@@ -223,12 +223,13 @@ const styles = `
 }
 
 .drona-footer {
-  margin-top: 0;
-  padding: 0.5rem 0.75rem;
+  width: 100%;
+  padding: 0.5rem 0;
   border-top: 1px solid #e5e7eb;
   background: #f3f4f6;
   color: #64748b;
   font-size: 0.8rem;
+  flex-shrink: 0;
 }
 
 .drona-footer-credit {
@@ -241,6 +242,8 @@ const styles = `
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
+  padding-left: 15px;
+  padding-right: 15px;
 }
 
 .drona-footer-left,

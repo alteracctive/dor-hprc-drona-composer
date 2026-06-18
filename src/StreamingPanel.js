@@ -88,6 +88,7 @@ const StreamingPanel = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {!isFullscreen && <StatusBadge status={status} styles={styles} />}
           <button
+            type="button"
             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}
             onClick={onToggleCollapse}
             title="Hide output"

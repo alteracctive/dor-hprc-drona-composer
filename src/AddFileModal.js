@@ -129,7 +129,7 @@ const NewFileTab = ({ onAdd }) => {
         onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
       />
       <div>
-        <button style={S.primaryBtn(!name.trim())} disabled={!name.trim()} onClick={handleAdd}>
+        <button type="button" style={S.primaryBtn(!name.trim())} disabled={!name.trim()} onClick={handleAdd}>
           Add File
         </button>
       </div>
@@ -209,6 +209,7 @@ const BrowseTab = ({ defaultPath, onAdd, onClose }) => {
           <React.Fragment key={crumb.path}>
             {i > 0 && <span style={{ color: '#adb5bd' }}>/</span>}
             <button
+              type="button"
               style={S.crumbBtn(i === breadcrumbs.length - 1)}
               onClick={() => i < breadcrumbs.length - 1 && navigate(crumb.path)}
             >
@@ -263,6 +264,7 @@ const BrowseTab = ({ defaultPath, onAdd, onClose }) => {
         <div style={S.selectedBar}>
           <span style={S.selectedPath}>{selected.path}</span>
           <button
+            type="button"
             style={S.primaryBtn(adding)}
             disabled={adding}
             onClick={() => addFile(selected.path, selected.name)}
@@ -297,6 +299,7 @@ const AddFileModal = ({ isOpen, onClose, onAddFile, defaultPath }) => {
         <div style={S.header}>
           <h5 style={S.headerTitle}>Add File to Job</h5>
           <button
+            type="button"
             style={S.closeBtn}
             onClick={onClose}
             onMouseOver={(e) => e.currentTarget.style.opacity = 1}
@@ -305,8 +308,8 @@ const AddFileModal = ({ isOpen, onClose, onAddFile, defaultPath }) => {
         </div>
 
         <div style={S.tabBar}>
-          <button style={S.tab(tab === 'new')} onClick={() => setTab('new')}>New File</button>
-          <button style={S.tab(tab === 'browse')} onClick={() => setTab('browse')}>Browse Files</button>
+          <button type="button" style={S.tab(tab === 'new')} onClick={() => setTab('new')}>New File</button>
+          <button type="button" style={S.tab(tab === 'browse')} onClick={() => setTab('browse')}>Browse Files</button>
         </div>
 
         {tab === 'new'
