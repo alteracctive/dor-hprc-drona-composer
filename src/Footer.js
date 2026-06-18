@@ -7,7 +7,7 @@ function Footer() {
         <div className="drona-footer-left">
           <strong>Drona Workflow Engine</strong>
           <span className="footer-divider">|</span>
-          <span>Developed by the Fishbowl Student Helpdesk, HPRC</span>
+          <span className="drona-footer-credit">Developed by the Fishbowl Student Helpdesk, HPRC</span>
         </div>
 
         <div className="drona-footer-right">

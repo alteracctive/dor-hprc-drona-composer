@@ -36,7 +36,7 @@ const SubmissionHistory = ({ handleRerun, handleForm }) => {
   const [endDate, setEndDate] = useState('');
   const [openDropdownId, setOpenDropdownId] = useState('__none__');
   const [filteredData, setFilteredData] = useState([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const lastRefreshAtRef = useRef(0);
   
@@ -109,6 +109,11 @@ const SubmissionHistory = ({ handleRerun, handleForm }) => {
     return processedData;
   };
 
+  const startCooldown = useCallback(() => {
+    lastRefreshAtRef.current = Date.now();
+    setCooldownSeconds(REFRESH_COOLDOWN_SECONDS);
+  }, []);
+
   const updateCooldown = useCallback(() => {
     if (!lastRefreshAtRef.current) {
       setCooldownSeconds(0);
@@ -125,21 +130,23 @@ const SubmissionHistory = ({ handleRerun, handleForm }) => {
     return () => window.clearInterval(intervalId);
   }, [updateCooldown]);
 
-  const handleRefresh = async () => {
-    if (isRefreshing || cooldownSeconds > 0) {
+  const handleRefresh = () => {
+    if (isFetching || cooldownSeconds > 0) {
       return;
     }
 
-    setIsRefreshing(true);
-    try {
-      await fetchJobHistory({ applyCurrentFilter: true });
-      lastRefreshAtRef.current = Date.now();
-      setCooldownSeconds(REFRESH_COOLDOWN_SECONDS);
-    } catch (error) {
-      console.error('Failed to refresh job history:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
+    setIsFetching(true);
+
+    fetchJobHistory({ applyCurrentFilter: true })
+      .then(() => {
+        startCooldown();
+      })
+      .catch((error) => {
+        console.error('Failed to refresh job history:', error);
+      })
+      .finally(() => {
+        setIsFetching(false);
+      });
   };
 
   const columns = [
@@ -309,16 +316,25 @@ const SubmissionHistory = ({ handleRerun, handleForm }) => {
           </button>
         </div>
         <button
-          className="btn btn-primary maroon-button d-inline-flex align-items-center mt-2 mt-md-0"
+          type="button"
+          className={`btn d-inline-flex align-items-center mt-2 mt-md-0 submission-history-refresh ${
+            cooldownSeconds > 0
+              ? 'btn-secondary submission-history-refresh--cooldown'
+              : 'btn-primary maroon-button'
+          }`}
           onClick={handleRefresh}
-          disabled={isRefreshing || cooldownSeconds > 0}
-          aria-label="Refresh job history"
+          disabled={isFetching || cooldownSeconds > 0}
+          aria-label={
+            cooldownSeconds > 0
+              ? `Refresh available in ${cooldownSeconds} seconds`
+              : 'Refresh job history'
+          }
         >
-          <RefreshIcon spinning={isRefreshing} />
-          {isRefreshing
-            ? 'Refreshing...'
-            : cooldownSeconds > 0
-              ? `Refresh (${cooldownSeconds}s)`
+          <RefreshIcon spinning={isFetching && cooldownSeconds === 0} />
+          {cooldownSeconds > 0
+            ? `Refresh in ${cooldownSeconds}s`
+            : isFetching
+              ? 'Refreshing...'
               : 'Refresh'}
         </button>
       </div>

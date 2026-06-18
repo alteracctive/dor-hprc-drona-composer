@@ -8,7 +8,6 @@ import WorkflowStepTracker from "./WorkflowStepTracker";
 import EnvironmentStep from "./EnvironmentStep";
 import JobPreviewStep from "./JobPreviewStep";
 import { useJobSocket } from "./hooks/useJobSocket";
-import EnvironmentFilmstrip from "./EnvironmentFilmstrip";
 import {
   getEnvironmentIconUrl,
   getEnvironmentEmoji,
@@ -333,7 +332,7 @@ function JobComposer({
           display: "flex",
           flex: "1 1 auto",
           minHeight: 0,
-          gap: "0.5rem",
+          gap: "15px",
           height: "100%",
         }}
       >
@@ -487,32 +486,22 @@ function JobComposer({
                         )}
 
                         {workflowStep === 3 && (
-                          <div className="composer-multipane-layout">
-                            <aside className="composer-filmstrip-pane">
-                              <EnvironmentFilmstrip
-                                environments={props.environments}
-                                selectedEnvironment={props.environment}
-                                onSelectEnvironment={props.handleEnvChange}
-                                onAddEnvironment={() => setWorkflowStep(1)}
-                              />
-                            </aside>
-                            <div className="composer-main-pane">
-                              <input type="hidden" name="location" value={props.runLocation || ""} />
-                              <input type="hidden" name="drona_job_id" value={dronaJobId || ""} />
-                              <input type="hidden" name="runtime" value={props.environment.env} />
-                              <JobPreviewStep
-                                messages={props.messages}
-                                multiPaneRef={multiPaneRef}
-                                panes={props.panes}
-                                setPanes={props.setPanes}
-                                outputLines={lines}
-                                htmlOutput={htmlOutput}
-                                status={status}
-                                isSubmitDisabled={isSubmitDisabled}
-                                onBack={() => setWorkflowStep(2)}
-                              />
-                            </div>
-                          </div>
+                          <>
+                            <input type="hidden" name="location" value={props.runLocation || ""} />
+                            <input type="hidden" name="drona_job_id" value={dronaJobId || ""} />
+                            <input type="hidden" name="runtime" value={props.environment.env} />
+                            <JobPreviewStep
+                              messages={props.messages}
+                              multiPaneRef={multiPaneRef}
+                              panes={props.panes}
+                              setPanes={props.setPanes}
+                              outputLines={lines}
+                              htmlOutput={htmlOutput}
+                              status={status}
+                              isSubmitDisabled={isSubmitDisabled}
+                              onBack={() => setWorkflowStep(2)}
+                            />
+                          </>
                         )}
                       </>
                     )}

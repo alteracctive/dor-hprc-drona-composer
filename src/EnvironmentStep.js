@@ -160,7 +160,7 @@ function EnvironmentTable({ rows, sortColumn, sortDirection, onSort, renderActio
               onSort={onSort}
               className="env-table__col-env"
             />
-            <th>Description</th>
+            <th className="env-table__col-description">Description</th>
             <SortableTh
               column="category"
               label="Category"
@@ -177,14 +177,14 @@ function EnvironmentTable({ rows, sortColumn, sortDirection, onSort, renderActio
               onSort={onSort}
               className="env-table__col-organization"
             />
-            <th>Version</th>
-            <th>Action</th>
+            <th className="env-table__col-version">Version</th>
+            <th className="env-table__col-action">Action</th>
           </tr>
         </thead>
         <tbody>
           {sortedRows.map((row) => (
             <tr key={getRowKey(row)}>
-              <td>
+              <td className="env-table__col-env">
                 <EnvironmentNameCell
                   name={getEnvName(row)}
                   envKey={row.env}
@@ -193,11 +193,11 @@ function EnvironmentTable({ rows, sortColumn, sortDirection, onSort, renderActio
                   textStyle={getEnvStyle ? getEnvStyle(row) : undefined}
                 />
               </td>
-              <td>{row.description || "N/A"}</td>
-              <td>{row.category || "N/A"}</td>
-              <td>{row.organization || "N/A"}</td>
-              <td>{row.version || "N/A"}</td>
-              <td>{renderAction(row)}</td>
+              <td className="env-table__col-description">{row.description || "N/A"}</td>
+              <td className="env-table__col-category">{row.category || "N/A"}</td>
+              <td className="env-table__col-organization">{row.organization || "N/A"}</td>
+              <td className="env-table__col-version">{row.version || "N/A"}</td>
+              <td className="env-table__col-action">{renderAction(row)}</td>
             </tr>
           ))}
         </tbody>
