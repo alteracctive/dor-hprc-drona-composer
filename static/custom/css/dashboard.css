@@ -234,17 +234,21 @@ footer {
 .job-composer-page {
   width: 100%;
   height: calc(100vh - 20px);
-  padding: 20px;
+  padding: 8px;
   box-sizing: border-box;
 }
 
 .job-composer-page--with-header {
-  height: calc(100vh - 72px - 20px);
+  height: calc(100vh - 72px - 8px);
 }
 
 .job-composer-container {
   height: 100%;
   max-height: 100%;
+}
+
+.job-composer-container .card-body {
+  padding: 0.75rem;
 }
 
 .job-composer-sidebar {
@@ -734,4 +738,49 @@ footer {
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(80, 0, 0, 0.1);
+}
+
+.workflow-env-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: maroon;
+  font-weight: 600;
+}
+
+.workflow-env-header__icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.workflow-env-header__emoji {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.workflow-env-header__fallback {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background-color: maroon;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.workflow-env-header__name {
+  line-height: 1.3;
 }

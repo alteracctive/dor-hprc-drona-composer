@@ -3,11 +3,6 @@ import React from "react";
 function Footer() {
   return (
     <footer className="drona-footer">
-      <div className="drona-footer-caution">
-        Caution: Job files will overwrite existing files with the same name.
-        The same principle applies to executable scripts.
-      </div>
-
       <div className="drona-footer-main">
         <div className="drona-footer-left">
           <strong>Drona Workflow Engine</strong>

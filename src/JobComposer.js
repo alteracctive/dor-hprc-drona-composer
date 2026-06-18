@@ -9,11 +9,45 @@ import EnvironmentStep from "./EnvironmentStep";
 import JobPreviewStep from "./JobPreviewStep";
 import { useJobSocket } from "./hooks/useJobSocket";
 import EnvironmentFilmstrip from "./EnvironmentFilmstrip";
+import {
+  getEnvironmentIconUrl,
+  getEnvironmentEmoji,
+  getEnvironmentInitial,
+} from "./EnvironmentIcons";
 import { validateRequiredFields } from "./schemaRendering/utils/fieldUtils";
 import ConfigGate from "./ConfigGate";
 import SettingsPage from "./SettingsPage";
 import Footer from "./Footer";
 import "./styles/JobComposerEnvSplitStyles.js";
+
+function EnvironmentStepHeader({ name, icon }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const iconUrl = getEnvironmentIconUrl(name, null);
+  const emoji = getEnvironmentEmoji(name, icon);
+  const showImage = iconUrl && !imageFailed;
+
+  return (
+    <h5 className="workflow-env-header mb-3">
+      {showImage ? (
+        <img
+          className="workflow-env-header__icon"
+          src={iconUrl}
+          alt=""
+          onError={() => setImageFailed(true)}
+        />
+      ) : emoji ? (
+        <span className="workflow-env-header__emoji" aria-hidden="true">
+          {emoji}
+        </span>
+      ) : (
+        <span className="workflow-env-header__fallback" aria-hidden="true">
+          {getEnvironmentInitial(name)}
+        </span>
+      )}
+      <span className="workflow-env-header__name">{name}</span>
+    </h5>
+  );
+}
 
 function SidebarIcon({ name }) {
   const iconProps = {
@@ -299,7 +333,7 @@ function JobComposer({
           display: "flex",
           flex: "1 1 auto",
           minHeight: 0,
-          gap: "1rem",
+          gap: "0.5rem",
           height: "100%",
         }}
       >
@@ -311,7 +345,7 @@ function JobComposer({
             display: "flex",
             flexDirection: "column",
             gap: "0.75rem",
-            padding: "1rem",
+            padding: "0.75rem",
           }}
         >
           {sidebarItems.map(({ id, label, icon }) => (
@@ -394,26 +428,16 @@ function JobComposer({
                     )}
 
                     {(workflowStep === 2 || workflowStep === 3) && props.environment?.env && (
-                      <div className="composer-multipane-layout">
-                        <aside className="composer-filmstrip-pane">
-                          <EnvironmentFilmstrip
-                            environments={props.environments}
-                            selectedEnvironment={props.environment}
-                            onSelectEnvironment={props.handleEnvChange}
-                            onAddEnvironment={() => setWorkflowStep(1)}
-                          />
-                        </aside>
-                        <div className="composer-main-pane">
-                          <input type="hidden" name="location" value={props.runLocation || ""} />
-                          <input type="hidden" name="drona_job_id" value={dronaJobId || ""} />
-                          <div
-                            style={{ display: workflowStep === 2 ? "block" : "none" }}
-                            aria-hidden={workflowStep === 3}
-                          >
+                      <>
+                        {workflowStep === 2 && (
+                          <>
+                            <input type="hidden" name="location" value={props.runLocation || ""} />
+                            <input type="hidden" name="drona_job_id" value={dronaJobId || ""} />
                             <input type="hidden" name="runtime" value={props.environment.env} />
-                            <h5 className="mb-3" style={{ color: "maroon", fontWeight: 600 }}>
-                              {props.environment.env}
-                            </h5>
+                            <EnvironmentStepHeader
+                              name={props.environment.env}
+                              icon={props.environment.icon}
+                            />
                             <Composer
                               environment={props.environment}
                               fields={props.fields}
@@ -427,64 +451,70 @@ function JobComposer({
                               setLocationPickedByUser={props.setLocationPickedByUser}
                               locationPickedByUser={props.locationPickedByUser}
                             />
-                            {workflowStep === 2 && (
-                              <div className="workflow-step-actions">
-                                <button
-                                  type="button"
-                                  className="btn btn-secondary"
-                                  onClick={() => setWorkflowStep(1)}
-                                >
-                                  Back
-                                </button>
-                                <button
-                                  type="button"
-                                  id="job-preview-button"
-                                  className="btn btn-primary maroon-button-filled"
-                                  onClick={handlePreview}
-                                  disabled={isPreviewLoading}
-                                >
-                                  {isPreviewLoading ? (
-                                    <>
-                                      <span
-                                        className="spinner-border spinner-border-sm mr-1"
-                                        role="status"
-                                        aria-hidden="true"
-                                      />
-                                      Loading Preview...
-                                    </>
-                                  ) : (
-                                    "Preview and Submit"
-                                  )}
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                            <div className="workflow-step-actions">
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => setWorkflowStep(1)}
+                              >
+                                Back
+                              </button>
+                              <button
+                                type="button"
+                                id="job-preview-button"
+                                className="btn btn-primary maroon-button-filled"
+                                onClick={handlePreview}
+                                disabled={isPreviewLoading}
+                              >
+                                {isPreviewLoading ? (
+                                  <>
+                                    <span
+                                      className="spinner-border spinner-border-sm mr-1"
+                                      role="status"
+                                      aria-hidden="true"
+                                    />
+                                    Loading Preview...
+                                  </>
+                                ) : (
+                                  "Preview and Submit"
+                                )}
+                              </button>
+                            </div>
+                          </>
+                        )}
 
-                          {workflowStep === 3 && (
-                            <JobPreviewStep
-                              messages={props.messages}
-                              multiPaneRef={multiPaneRef}
-                              panes={props.panes}
-                              setPanes={props.setPanes}
-                              outputLines={lines}
-                              htmlOutput={htmlOutput}
-                              status={status}
-                              isSubmitDisabled={isSubmitDisabled}
-                              onBack={() => setWorkflowStep(2)}
-                            />
-                          )}
-                        </div>
-                      </div>
+                        {workflowStep === 3 && (
+                          <div className="composer-multipane-layout">
+                            <aside className="composer-filmstrip-pane">
+                              <EnvironmentFilmstrip
+                                environments={props.environments}
+                                selectedEnvironment={props.environment}
+                                onSelectEnvironment={props.handleEnvChange}
+                                onAddEnvironment={() => setWorkflowStep(1)}
+                              />
+                            </aside>
+                            <div className="composer-main-pane">
+                              <input type="hidden" name="location" value={props.runLocation || ""} />
+                              <input type="hidden" name="drona_job_id" value={dronaJobId || ""} />
+                              <input type="hidden" name="runtime" value={props.environment.env} />
+                              <JobPreviewStep
+                                messages={props.messages}
+                                multiPaneRef={multiPaneRef}
+                                panes={props.panes}
+                                setPanes={props.setPanes}
+                                outputLines={lines}
+                                htmlOutput={htmlOutput}
+                                status={status}
+                                isSubmitDisabled={isSubmitDisabled}
+                                onBack={() => setWorkflowStep(2)}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </form>
                 )}
-              </div>
-
-              <div className="card-footer">
-                <small className="text-muted">
-                  Cautions: Job files will overwrite existing files with the same name. The same
-                  principle applies for your executable scripts.
-                </small>
               </div>
             </div>
 
@@ -543,10 +573,10 @@ function JobComposer({
               </div>
             </div>
           </div>
-
-          <Footer />
         </div>
       </div>
+
+      <Footer />
 
       <RequiredFieldsModal
         isOpen={showRequiredFieldsModal}

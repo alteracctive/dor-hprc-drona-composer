@@ -7,8 +7,8 @@ const styles = `
 }
 
 #main-container.container {
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
 }
 
 .composer-multipane-layout {
@@ -224,19 +224,13 @@ const styles = `
 }
 
 .drona-footer {
-  margin-top: 1rem;
-  padding-top: 1rem;
-
+  margin-top: auto;
+  padding-top: 0.35rem;
+  padding-bottom: 0;
   border-top: 1px solid #e5e7eb;
-
   background: transparent;
-
   color: #64748b;
   font-size: 0.8rem;
-}
-
-.drona-footer-caution {
-  margin-bottom: 0.75rem;
 }
 
 .drona-footer-main {
