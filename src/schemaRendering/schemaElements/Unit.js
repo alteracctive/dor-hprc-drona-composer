@@ -86,6 +86,7 @@ function Unit(props) {
         <input
           type="number"
           name="memory_number"
+          id={props.id || props.name}
           className="form-control"
           value={number || ""}
           onChange={handleValueChange}
@@ -95,6 +96,7 @@ function Unit(props) {
             name="memory_unit" 
             value={unit}
             onChange={handleValueChange}
+            aria-label="Unit"
           >
             {unitList}
           </select>

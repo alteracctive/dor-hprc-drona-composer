@@ -211,8 +211,14 @@ function Uploader(props) {
 
   function handleMainButtonClick() {
     if (uploadMode === "file") {
+      if (fileInput.current) {
+        fileInput.current.value = "";
+      }
       fileInput.current.click();
     } else {
+      if (folderInput.current) {
+        folderInput.current.value = "";
+      }
       folderInput.current.click();
     }
   }

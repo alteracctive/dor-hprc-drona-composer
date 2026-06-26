@@ -3,6 +3,7 @@
   <head>
     <title>TAMU DASHBOARD ({{ config.cluster_name }})</title>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="frame-src 'self' data: blob: https://hprc.tamu.edu/kb/;" />
     <link
       rel="icon"
       href="{{ url_for('static', filename='favicon.ico') }}"

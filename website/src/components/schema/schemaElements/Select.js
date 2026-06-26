@@ -61,6 +61,7 @@ function CustomSelect(props) {
           onChange={handleValueChange}
           options={props.options}
           name={props.name}
+          inputId={props.id || props.name}
           styles={{
             ...customSelectStyles,
 	    container: (base) => ({ ...base, flexGrow: 1 }),

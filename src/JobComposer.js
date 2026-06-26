@@ -119,6 +119,8 @@ function JobComposer({
   const [showScriptChangeModal, setShowScriptChangeModal] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [appearance, setAppearance] = useState(readAppearance);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false);
 
   const {
     lines,
@@ -295,6 +297,24 @@ function JobComposer({
     submitJob(action, formData);
   };
 
+  // Reset hasAutoSubmitted when transitioning away from step 3 rerun
+  useEffect(() => {
+    if (workflowStep !== 3 || props.jobStatus !== "rerun") {
+      setHasAutoSubmitted(false);
+    }
+  }, [workflowStep, props.jobStatus]);
+
+  // Auto-submit on rerun when step 3 renders
+  useEffect(() => {
+    if (workflowStep === 3 && props.jobStatus === "rerun" && !hasAutoSubmitted) {
+      if (multiPaneRef.current) {
+        setHasSubmittedCurrentPreview(false);
+        setHasAutoSubmitted(true);
+        executeSubmit();
+      }
+    }
+  }, [workflowStep, props.jobStatus, hasAutoSubmitted, multiPaneRef.current]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!props.environment || !props.environment.env) {
@@ -442,55 +462,71 @@ function JobComposer({
       }}
     >
       {error && <ErrorAlert error={error} onClose={() => setError(null)} />}
-      <div
-        style={{
-          display: "flex",
-          flex: "1 1 auto",
-          minHeight: 0,
-          gap: "15px",
-          height: "100%",
-        }}
-      >
-        <aside
-          className="card shadow job-composer-sidebar"
-          style={{
-            width: "220px",
-            flexShrink: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-            padding: "0.75rem",
-          }}
-        >
-          {sidebarItems.map(({ id, label, icon }) => (
+      <div className="job-composer-row">
+        <aside className="card shadow job-composer-sidebar">
+          <div
+            className="job-composer-sidebar-toggle"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <span className="job-composer-sidebar-toggle__label">
+              {sidebarItems.find((item) => item.id === activeSection)?.label || "Menu"}
+            </span>
             <button
-              key={id}
               type="button"
-              className={`btn btn-primary ${activeSection === id ? "maroon-button-filled" : "maroon-button"}`}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                textAlign: "left",
-              }}
-              onClick={() => setActiveSection(id)}
+              className="btn job-composer-hamburger-btn"
+              aria-label="Toggle navigation"
             >
-              <SidebarIcon name={icon} />
-              <span>{label}</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {isMobileMenuOpen ? (
+                  <>
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </>
+                ) : (
+                  <>
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </>
+                )}
+              </svg>
             </button>
-          ))}
+          </div>
+          <div className={`job-composer-sidebar-menu ${isMobileMenuOpen ? "is-open" : ""}`}>
+            {sidebarItems.map(({ id, label, icon }) => (
+              <button
+                key={id}
+                type="button"
+                className={`btn btn-primary ${activeSection === id ? "maroon-button-filled" : "maroon-button"}`}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  textAlign: "left",
+                }}
+                onClick={() => {
+                  setActiveSection(id);
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                <SidebarIcon name={icon} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
         </aside>
 
-        <div
-          style={{
-            flex: 1,
-            minWidth: 0,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
+        <div className="job-composer-main-content">
           <div className="job-composer-main-panel">
             <div
               className="job-composer-main-panel__inner"
@@ -511,7 +547,15 @@ function JobComposer({
             >
               <div
                 className="card-body job-composer-workflow-body"
-                style={{ overflowY: "auto", overflowX: "hidden", flex: "1 1 auto", minWidth: 0 }}
+                style={{
+                  overflowY: workflowStep === 3 ? "hidden" : "auto",
+                  overflowX: "hidden",
+                  flex: "1 1 auto",
+                  minWidth: 0,
+                  display: workflowStep === 3 ? "flex" : undefined,
+                  flexDirection: workflowStep === 3 ? "column" : undefined,
+                  height: workflowStep === 3 ? "100%" : undefined,
+                }}
               >
                 <ConfigGate onStatusChange={setConfigBlocked} />
 
@@ -527,7 +571,13 @@ function JobComposer({
                     onSubmit={handleSubmit}
                     onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
                     action={document.dashboard_url + "/jobs/composer/submit"}
-                    style={{ width: "100%" }}
+                    style={{
+                      width: "100%",
+                      height: workflowStep === 3 ? "100%" : undefined,
+                      display: workflowStep === 3 ? "flex" : undefined,
+                      flexDirection: workflowStep === 3 ? "column" : undefined,
+                      minHeight: workflowStep === 3 ? 0 : undefined,
+                    }}
                   >
                     <div className="workflow-step-header">
                       <WorkflowStepTracker

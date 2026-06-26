@@ -52,7 +52,7 @@ function Number(props) {
         <input
           type="number"
           name={props.name}
-          id={props.id}
+          id={props.id || props.name}
           value={value}
           placeholder={props.placeholder}
           className="form-control"

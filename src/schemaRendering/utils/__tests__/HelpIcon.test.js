@@ -177,7 +177,7 @@ describe('useHelpTooltip', () => {
     fireEvent.mouseEnter(screen.getByTestId('label-text'));
 
     act(() => {
-      jest.advanceTimersByTime(1000);
+      jest.advanceTimersByTime(300);
     });
 
     fireEvent.mouseLeave(screen.getByTestId('label-text'));
@@ -222,5 +222,25 @@ describe('Label', () => {
     });
 
     expect(screen.getByRole('tooltip')).toHaveTextContent('Helper text');
+  });
+
+  test('hides tooltip after leaving the icon and label text', () => {
+    render(<Label name="field" label="Field Name" help="Helper text" />);
+
+    fireEvent.mouseEnter(screen.getByText('?'));
+
+    act(() => {
+      jest.advanceTimersByTime(SHOW_DELAY_ICON_MS);
+    });
+
+    expect(screen.getByRole('tooltip')).toBeInTheDocument();
+
+    fireEvent.mouseLeave(screen.getByText('?'));
+
+    act(() => {
+      jest.advanceTimersByTime(HIDE_DELAY_MS);
+    });
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 });

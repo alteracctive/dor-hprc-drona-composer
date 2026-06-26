@@ -222,7 +222,7 @@ const PreviewPanel = ({
   };
 
   return (
-    <div style={outerStyle}>
+    <div className="job-preview-left-panel" style={outerStyle}>
       <div ref={containerRef} style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
         {splits.map((split, splitIndex) => (
           <React.Fragment key={split.id}>

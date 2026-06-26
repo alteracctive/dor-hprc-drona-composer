@@ -160,7 +160,7 @@ class JobHistoryManager:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute("PRAGMA foreign_keys = ON")
                 conn.execute("""
-                    INSERT INTO job_history 
+                    INSERT OR REPLACE INTO job_history 
                     (drona_id, name, environment, location, runtime_meta, start_time, status, env_params)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (

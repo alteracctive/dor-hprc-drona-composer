@@ -7,9 +7,9 @@ import {
   readHighContrastTooltip,
 } from '../../userPreferences';
 
-export const HIDE_DELAY_MS = 500;
-export const SHOW_DELAY_ICON_MS = 750;
-export const SHOW_DELAY_TEXT_MS = 1500;
+export const HIDE_DELAY_MS = 250;
+export const SHOW_DELAY_ICON_MS = 500;
+export const SHOW_DELAY_TEXT_MS = 500;
 
 const VIEWPORT_PADDING = 12;
 const TOOLTIP_GAP = 4;
@@ -57,14 +57,14 @@ const useHighContrastTooltip = () => {
 const iconStyle = {
   marginLeft: '3px',
   fontSize: '0.75em',
-  color: '#007bff',
+  color: '#0056b3',
   opacity: 0.6,
   cursor: 'pointer',
   transition: 'opacity 0.1s ease',
   display: 'inline-flex',
   justifyContent: 'center',
   alignItems: 'center',
-  border: '1px solid #007bff',
+  border: '1px solid #0056b3',
   borderRadius: '50%',
   padding: '2px',
   width: '1.2em',
@@ -76,6 +76,10 @@ export const useHelpTooltip = (enabled = true) => {
   const [visible, setVisible] = useState(false);
   const showTimerRef = useRef(null);
   const hideTimerRef = useRef(null);
+
+  const hoveringTextRef = useRef(false);
+  const hoveringIconRef = useRef(false);
+  const hoveringTooltipRef = useRef(false);
 
   const clearShowTimer = useCallback(() => {
     if (showTimerRef.current) {
@@ -93,6 +97,13 @@ export const useHelpTooltip = (enabled = true) => {
 
   const scheduleShow = useCallback((source) => {
     if (!enabled) return;
+
+    if (source === 'text') {
+      hoveringTextRef.current = true;
+    } else if (source === 'icon') {
+      hoveringIconRef.current = true;
+    }
+
     clearHideTimer();
     if (visible) return;
     clearShowTimer();
@@ -100,15 +111,57 @@ export const useHelpTooltip = (enabled = true) => {
     showTimerRef.current = setTimeout(() => setVisible(true), delay);
   }, [clearHideTimer, clearShowTimer, enabled, visible]);
 
-  const handleLeave = useCallback(() => {
+  const handleLeave = useCallback((source) => {
     clearShowTimer();
-    clearHideTimer();
-    hideTimerRef.current = setTimeout(() => setVisible(false), HIDE_DELAY_MS);
+
+    let sourceStr = '';
+    if (typeof source === 'string') {
+      sourceStr = source;
+    } else if (source && source.currentTarget) {
+      const el = source.currentTarget;
+      if (el.getAttribute('role') === 'tooltip' || el.classList.contains('help-tooltip')) {
+        sourceStr = 'tooltip';
+      } else if (el.innerText === '?' || el.textContent === '?') {
+        sourceStr = 'icon';
+      } else {
+        sourceStr = 'text';
+      }
+    }
+
+    if (sourceStr === 'text') {
+      hoveringTextRef.current = false;
+    } else if (sourceStr === 'icon') {
+      hoveringIconRef.current = false;
+    } else if (sourceStr === 'tooltip') {
+      hoveringTooltipRef.current = false;
+    } else {
+      hoveringTextRef.current = false;
+      hoveringIconRef.current = false;
+      hoveringTooltipRef.current = false;
+    }
+
+    if (!hoveringTextRef.current && !hoveringIconRef.current && !hoveringTooltipRef.current) {
+      clearHideTimer();
+      hideTimerRef.current = setTimeout(() => {
+        if (!hoveringTextRef.current && !hoveringIconRef.current && !hoveringTooltipRef.current) {
+          setVisible(false);
+        }
+      }, HIDE_DELAY_MS);
+    }
   }, [clearHideTimer, clearShowTimer]);
 
   const handleTooltipEnter = useCallback(() => {
+    hoveringTooltipRef.current = true;
     clearHideTimer();
   }, [clearHideTimer]);
+
+  useEffect(() => {
+    if (!visible) {
+      hoveringTextRef.current = false;
+      hoveringIconRef.current = false;
+      hoveringTooltipRef.current = false;
+    }
+  }, [visible]);
 
   useEffect(() => () => {
     clearShowTimer();
@@ -198,18 +251,27 @@ const HelpIcon = ({
     isHighContrast ? 'help-tooltip--high-contrast' : '',
   ].filter(Boolean).join(' ');
 
+  const currentIconStyle = isModern
+    ? {
+        ...iconStyle,
+        backgroundColor: '#0056b3',
+        color: '#ffffff',
+        border: '1px solid #0056b3',
+      }
+    : iconStyle;
+
   return (
     <span style={{ display: 'inline-flex', verticalAlign: 'middle' }}>
       <span
         ref={anchorRef}
-        style={iconStyle}
+        style={currentIconStyle}
         onMouseEnter={(e) => {
           e.currentTarget.style.opacity = 1;
-          onIconMouseEnter?.();
+          onIconMouseEnter?.(e);
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.opacity = 0.6;
-          onIconMouseLeave?.();
+          onIconMouseLeave?.(e);
         }}
         aria-describedby={visible ? tooltipId : undefined}
       >

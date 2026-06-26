@@ -143,6 +143,7 @@ function Module(props) {
       <div className="module-widget">
         <div className="input-group" style={{ position: 'relative' }}>
           <input
+            id={props.id || props.name}
             ref={moduleSearchRef}
             className="form-control"
             value={searchTerm}
@@ -156,6 +157,7 @@ function Module(props) {
               className="form-control" 
               onChange={handleToolchain}
               value={toolchain}
+              aria-label="Toolchain"
             >
               {props.toolchains.map((tc) => (
                 <option key={tc.value} value={tc.value}>{tc.label}</option>

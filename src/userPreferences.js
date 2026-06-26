@@ -15,9 +15,9 @@ function dispatchPreferencesChanged() {
 export function readAppearance() {
   try {
     const value = localStorage.getItem(APPEARANCE_STORAGE_KEY);
-    return value === APPEARANCE_MODERN ? APPEARANCE_MODERN : APPEARANCE_CLASSIC;
+    return value === APPEARANCE_CLASSIC ? APPEARANCE_CLASSIC : APPEARANCE_MODERN;
   } catch {
-    return APPEARANCE_CLASSIC;
+    return APPEARANCE_MODERN;
   }
 }
 

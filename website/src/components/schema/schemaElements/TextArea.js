@@ -50,7 +50,7 @@ function TextArea(props) {
     >
       <textarea
         name={props.name}
-        id={props.id}
+        id={props.id || props.name}
         value={value}
         placeholder={props.placeholder}
         className="form-control"

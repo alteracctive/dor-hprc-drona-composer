@@ -82,6 +82,9 @@ def submit_job_route():
         job_id=drona_job_id
     )
 
+    if not job_record:
+        return jsonify({"error": "Failed to save job to history database"}), 500
+
     return jsonify({
         "bash_cmd": bash_cmd,
         "drona_job_id": job_record["job_id"],

@@ -229,16 +229,87 @@ export function App() {
       }
 
       setJobName(promptData.jobName);
+      setRunLocation(promptData.location);
+      setLocationPickedByUser(true);
+      setDronaJobId(row.job_id);
+
+      const formData = new FormData();
+      if (row.form_data) {
+        for (const [key, val] of Object.entries(row.form_data)) {
+          if (val && typeof val === "object" && "value" in val && "label" in val) {
+            formData.append(key, val.value);
+            formData.append(`${key}_label`, val.label);
+          } else if (Array.isArray(val)) {
+            formData.append(key, JSON.stringify(val));
+          } else if (val !== null && val !== undefined) {
+            formData.append(key, String(val));
+          }
+        }
+      }
+
+      formData.append("user_picked_location", "1");
+      formData.append("drona_job_id", row.job_id);
+      formData.append("location", promptData.location);
+      formData.append("name", promptData.jobName);
+      formData.append("runtime", row.runtime);
+      formData.append("env_dir", row.env_dir);
+      formData.append("env_name", row.runtime);
+
+      const action = document.dashboard_url + "/jobs/composer/preview";
+      const jobScript = await preview_job(action, formData);
+
+      setJobScript(jobScript["script"]);
+
+      const newPanes = [
+        {
+          preview_name: "driver.sh",
+          content: jobScript["driver"],
+          name: "driver",
+          order: -2,
+        },
+      ];
+      if (jobScript["script"] != null) {
+        newPanes.push({
+          preview_name: "template.txt",
+          content: jobScript["script"],
+          name: "run_command",
+          order: -3,
+        });
+      }
+
+      for (const [fname, file] of Object.entries(jobScript["additional_files"])) {
+        newPanes.push({
+          preview_name: file["preview_name"],
+          content: file["content"],
+          name: fname,
+          order: file["preview_order"],
+        });
+      }
+
+      setPanes(newPanes);
+      setPreviewPanesSnapshot(
+        newPanes.map(({ name, content }) => ({ name, content: content ?? "" }))
+      );
+      setMessages(jobScript["messages"]);
+
       setRerunInfo({
         ...row,
         name: promptData.jobName,
         location: promptData.location,
+        script: jobScript["script"],
+        driver: jobScript["driver"],
+        additional_files: Object.fromEntries(
+          Object.entries(jobScript["additional_files"]).map(([fname, file]) => [
+            fname,
+            file["content"],
+          ])
+        ),
       });
 
-      setWorkflowStep(2);
+      setWorkflowStep(3);
     } catch (rerunError) {
       console.error("Failed to prepare rerun:", rerunError);
-      alert("Failed to prepare rerun: " + rerunError.message);
+      alert("Failed to prepare rerun: " + (rerunError.message || rerunError));
     }
   }
 
@@ -260,6 +331,15 @@ export function App() {
     if (composerRef.current) {
       composerRef.current.setValues(row.form_data);
     }
+
+    setJobName(row.name || "");
+    setRunLocation(row.location || defaultRunLocation);
+    setLocationPickedByUser(true);
+    setDronaJobId(null);
+
+    setPanes([{ title: "", name: "", content: "" }]);
+    setPreviewPanesSnapshot([]);
+    setMessages([]);
 
     setWorkflowStep(2);
   }

@@ -53,6 +53,27 @@ function buildBreadcrumbs(path) {
   return crumbs;
 }
 
+function formatSize(bytes, isDir) {
+  if (isDir) return "—";
+  if (bytes === null || bytes === undefined) return "—";
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+function formatMtime(mtimeSecs) {
+  if (!mtimeSecs) return "—";
+  const date = new Date(mtimeSecs * 1000);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+}
+
 function isSidebarPathActive(currentPath, suggestedPath) {
   if (!suggestedPath) {
     return false;
@@ -79,6 +100,15 @@ function SaveIcon() {
 
 function Picker(props) {
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const uploadIntervalsRef = useRef({});
+
+  useEffect(() => {
+    return () => {
+      if (uploadIntervalsRef.current) {
+        Object.values(uploadIntervalsRef.current).forEach(clearInterval);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setValue(props.defaultLocation);
@@ -101,23 +131,296 @@ function Picker(props) {
   const [subDirs, setSubDirs] = useState([]);
   const [subFiles, setSubFiles] = useState([]);
 
+  const [sortField, setSortField] = useState("name"); // "name", "size", "mtime"
+  const [sortOrder, setSortOrder] = useState("asc"); // "asc", "desc"
+
+  const [editingPath, setEditingPath] = useState(false);
+  const [editSegments, setEditSegments] = useState([]);
+  const [activeEditIndex, setActiveEditIndex] = useState(null);
+  const [segmentValidity, setSegmentValidity] = useState([]);
+  const [isPathInvalid, setIsPathInvalid] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+
+  const segmentRefs = useRef([]);
+  const breadcrumbRef = useRef(null);
+  const [doubleClickOffset, setDoubleClickOffset] = useState(null);
+  const clickTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const startEditing = (focusedIndex = null, offset = null) => {
+    let segs = currentPath.split("/").filter(Boolean);
+    if (segs.length === 0) {
+      segs = [""];
+    }
+    setEditSegments(segs);
+    setEditingPath(true);
+    setSegmentValidity([]);
+    setIsPathInvalid(false);
+
+    const targetIndex = focusedIndex !== null ? focusedIndex : segs.length - 1;
+    setActiveEditIndex(targetIndex);
+
+    if (focusedIndex === null) {
+      const lastSeg = segs[targetIndex] || "";
+      setDoubleClickOffset(lastSeg.length);
+    } else {
+      setDoubleClickOffset(offset);
+    }
+  };
+
+  const handleCrumbClick = (e, crumb, index) => {
+    e.stopPropagation();
+
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+
+      const selection = window.getSelection();
+      let offset = null;
+      if (selection && selection.anchorNode) {
+        offset = selection.anchorOffset;
+      }
+      startEditing(index, offset);
+    } else {
+      clickTimerRef.current = setTimeout(() => {
+        clickTimerRef.current = null;
+        loadDirectory(crumb.path);
+      }, 250);
+    }
+  };
+
+  useEffect(() => {
+    if (editingPath && activeEditIndex !== null && segmentRefs.current[activeEditIndex]) {
+      const el = segmentRefs.current[activeEditIndex];
+      el.focus();
+      if (doubleClickOffset !== null) {
+        el.setSelectionRange(doubleClickOffset, doubleClickOffset);
+        setDoubleClickOffset(null);
+      } else {
+        el.select();
+      }
+    }
+  }, [editingPath, activeEditIndex, editSegments.length, doubleClickOffset]);
+
+  const triggerPathValidation = () => {
+    const pathToCheck = "/" + editSegments.filter(Boolean).join("/");
+    setIsValidating(true);
+
+    return fetch(
+      document.dashboard_url +
+      "/jobs/composer/validate_path?path=" +
+      encodeURIComponent(pathToCheck)
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        setIsValidating(false);
+        if (data.valid) {
+          setSegmentValidity([]);
+          setIsPathInvalid(false);
+          loadDirectory(pathToCheck);
+          setEditingPath(false);
+          return true;
+        } else {
+          setSegmentValidity(data.validity || []);
+          setIsPathInvalid(true);
+          return false;
+        }
+      })
+      .catch(() => {
+        setIsValidating(false);
+        setIsPathInvalid(true);
+        return false;
+      });
+  };
+
+  const handleContainerBlur = (e) => {
+    if (breadcrumbRef.current && breadcrumbRef.current.contains(e.relatedTarget)) {
+      return;
+    }
+    triggerPathValidation();
+  };
+
+  const handleBreadcrumbCopy = (e) => {
+    const selection = window.getSelection().toString();
+    if (!selection) {
+      e.preventDefault();
+      const fullPath = "/" + editSegments.filter(Boolean).join("/");
+      e.clipboardData.setData("text/plain", fullPath);
+    }
+  };
+
+  const handleSegmentKeyDown = (index, e) => {
+    if (e.key === "/" || e.key === "Enter") {
+      e.preventDefault();
+      if (e.key === "/") {
+        if (index === editSegments.length - 1) {
+          setEditSegments([...editSegments, ""]);
+          setActiveEditIndex(index + 1);
+        } else {
+          setActiveEditIndex(index + 1);
+        }
+      } else if (e.key === "Enter") {
+        triggerPathValidation();
+      }
+    } else if (e.key === "Backspace" && editSegments[index] === "") {
+      e.preventDefault();
+      if (index > 0) {
+        const newSegments = [...editSegments];
+        newSegments.splice(index, 1);
+        setEditSegments(newSegments);
+        setActiveEditIndex(index - 1);
+      }
+    } else if (e.key === "ArrowLeft") {
+      if (e.target.selectionStart === 0 && e.target.selectionEnd === 0) {
+        if (index > 0) {
+          e.preventDefault();
+          setActiveEditIndex(index - 1);
+        }
+      }
+    } else if (e.key === "ArrowRight") {
+      if (e.target.selectionStart === e.target.value.length && e.target.selectionEnd === e.target.value.length) {
+        if (index < editSegments.length - 1) {
+          e.preventDefault();
+          setActiveEditIndex(index + 1);
+        }
+      }
+    }
+  };
+
+  const handleSegmentChange = (index, val) => {
+    if (val.includes("/")) {
+      const parts = val.split("/");
+      const newSegments = [...editSegments];
+      newSegments.splice(index, 1, ...parts.filter(Boolean));
+      setEditSegments(newSegments);
+      setActiveEditIndex(index + parts.filter(Boolean).length - 1);
+      return;
+    }
+
+    const newSegments = [...editSegments];
+    newSegments[index] = val;
+    setEditSegments(newSegments);
+  };
+
+  const handleSegmentPaste = (index, e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    if (pastedText) {
+      const parts = pastedText.replace(/\\/g, "/").split("/").filter(Boolean);
+      if (pastedText.startsWith("/")) {
+        setEditSegments(parts);
+        setActiveEditIndex(parts.length - 1);
+      } else {
+        const newSegments = [...editSegments];
+        newSegments.splice(index, 1, ...parts);
+        setEditSegments(newSegments);
+        setActiveEditIndex(index + parts.length - 1);
+      }
+    }
+  };
+
+  const handleSaveClick = () => {
+    if (editingPath) {
+      triggerPathValidation().then((isValid) => {
+        if (isValid) {
+          handleSaveChange();
+          const modalEl = document.getElementById("local-file-picker-modal-" + props.name);
+          if (modalEl && window.$) window.$(modalEl).modal("hide");
+        }
+      });
+    } else {
+      if (!isPathInvalid) {
+        handleSaveChange();
+        const modalEl = document.getElementById("local-file-picker-modal-" + props.name);
+        if (modalEl && window.$) window.$(modalEl).modal("hide");
+      }
+    }
+  };
+
+  const sortedSubDirs = useMemo(() => {
+    const sorted = [...subDirs];
+    sorted.sort((a, b) => {
+      let valA = a[sortField];
+      let valB = b[sortField];
+
+      if (sortField === "name") {
+        valA = (valA || "").toLowerCase();
+        valB = (valB || "").toLowerCase();
+      } else {
+        valA = valA ?? 0;
+        valB = valB ?? 0;
+      }
+
+      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [subDirs, sortField, sortOrder]);
+
+  const sortedSubFiles = useMemo(() => {
+    const sorted = [...subFiles];
+    sorted.sort((a, b) => {
+      let valA = a[sortField];
+      let valB = b[sortField];
+
+      if (sortField === "name") {
+        valA = (valA || "").toLowerCase();
+        valB = (valB || "").toLowerCase();
+      } else {
+        valA = valA ?? 0;
+        valB = valB ?? 0;
+      }
+
+      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [subFiles, sortField, sortOrder]);
+
   const remoteInput = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    let currentFile = remoteInput.current.files[0];
-    if (currentFile) {
-      let path = currentFile.webkitRelativePath
-        ? currentFile.webkitRelativePath
-        : currentFile.name;
-      inputRef.current.value = path;
-      setValue(path);
-      setGlobalFiles((prevFiles) => [...prevFiles, currentFile]);
+    if (pickerMode === "remote") {
+      const names = uploadedFiles.map((f) => f.name).join(", ");
+      setValue(names);
       if (props.onChange) {
-        props.onChange(props.index, path);
+        props.onChange(props.index, names);
       }
     }
-  }, [uploadedFiles]);
+  }, [uploadedFiles, pickerMode]);
+
+  useEffect(() => {
+    if (pickerMode === "remote" && uploadedFiles.length === 0 && value) {
+      const files = value.split(",").map((f) => f.trim()).filter(Boolean);
+      const initialFileObjects = files.map((filename) => ({
+        id: Math.random().toString(36).substr(2, 9),
+        name: filename,
+        status: "uploaded",
+        progress: 100,
+        file: null
+      }));
+      setUploadedFiles(initialFileObjects);
+    }
+  }, [pickerMode]);
 
   useEffect(() => {
     let url = document.dashboard_url + "/jobs/composer/mainpaths";
@@ -142,6 +445,9 @@ function Picker(props) {
 
   const loadDirectory = useCallback((fullPath) => {
     setCurrentPath(fullPath);
+    setEditingPath(false);
+    setIsPathInvalid(false);
+    setSegmentValidity([]);
 
     if (!fullPath) {
       setSubDirs([]);
@@ -151,7 +457,7 @@ function Picker(props) {
 
     return fetch(
       document.dashboard_url +
-      "/jobs/composer/subdirectories?path=" +
+      "/jobs/composer/subdirectories?details=true&path=" +
       encodeURIComponent(fullPath),
       {
         method: "GET",
@@ -162,14 +468,20 @@ function Picker(props) {
     )
       .then((response) => response.json())
       .then((data) => {
-        const subdirs = Object.entries(data.subdirectories).map((path) => [
-          path[1],
-          fullPath + "/" + path[1],
-        ]);
-        const subfiles = Object.entries(data.subfiles).map((path) => [
-          path[1],
-          fullPath + "/" + path[1],
-        ]);
+        const subdirs = data.subdirectories.map((item) => ({
+          name: typeof item === "object" ? item.name : item,
+          fullPath: fullPath + "/" + (typeof item === "object" ? item.name : item),
+          size: typeof item === "object" ? item.size : null,
+          mtime: typeof item === "object" ? item.mtime : null,
+          isDir: true,
+        }));
+        const subfiles = data.subfiles.map((item) => ({
+          name: typeof item === "object" ? item.name : item,
+          fullPath: fullPath + "/" + (typeof item === "object" ? item.name : item),
+          size: typeof item === "object" ? item.size : null,
+          mtime: typeof item === "object" ? item.mtime : null,
+          isDir: false,
+        }));
         setSubDirs(subdirs);
         setSubFiles(subfiles);
       });
@@ -187,6 +499,9 @@ function Picker(props) {
     setCurrentPath(fullPath);
     setSubDirs([]);
     setSubFiles([]);
+    setEditingPath(false);
+    setIsPathInvalid(false);
+    setSegmentValidity([]);
   }
 
   function handleBackClick() {
@@ -207,32 +522,58 @@ function Picker(props) {
     if (props.onChange) props.onChange(props.index, currentPath);
   }
 
-  function handleRemoteClick() {
-    let currentFiles = remoteInput.current.files;
-    for (let i = 0; i < currentFiles.length; i++) {
-      setUploadedFiles((prevFiles) => {
-        let fileToRemove = currentFiles[i];
-        let indexToRemove = prevFiles.indexOf(fileToRemove);
-        prevFiles.splice(indexToRemove, 1);
-        return prevFiles;
-      });
-      setGlobalFiles((prevFiles) => {
-        let fileToRemove = currentFiles[i];
-        let indexToRemove = prevFiles.indexOf(fileToRemove);
-        prevFiles.splice(indexToRemove, 1);
-        return prevFiles;
-      });
+  function handleRemoveUploadedFile(fileObj) {
+    if (uploadIntervalsRef.current[fileObj.id]) {
+      clearInterval(uploadIntervalsRef.current[fileObj.id]);
+      delete uploadIntervalsRef.current[fileObj.id];
     }
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileObj.id));
+    if (fileObj.file) {
+      setGlobalFiles((prevFiles) => prevFiles.filter((f) => f !== fileObj.file));
+    }
+  }
 
+  function handleRemoteClick() {
+    if (remoteInput.current) {
+      remoteInput.current.value = "";
+    }
     remoteInput.current.click();
   }
 
   function handleFileChange(files) {
     const filesArray = Array.from(files);
-    let newFiles = [];
-    filesArray.forEach((file) => {
-      newFiles.push(file);
-      setUploadedFiles((prevFiles) => [...prevFiles, file]);
+    const newFileObjects = filesArray.map((file) => {
+      const id = Math.random().toString(36).substr(2, 9);
+      return {
+        id,
+        file,
+        name: file.name,
+        status: "uploading",
+        progress: 0,
+      };
+    });
+
+    setUploadedFiles((prev) => [...prev, ...newFileObjects]);
+    setGlobalFiles((prevFiles) => [...prevFiles, ...filesArray]);
+
+    newFileObjects.forEach((fileObj) => {
+      let currentProgress = 0;
+      const interval = setInterval(() => {
+        currentProgress += Math.floor(Math.random() * 30) + 15;
+        if (currentProgress >= 100) {
+          currentProgress = 100;
+          clearInterval(interval);
+          delete uploadIntervalsRef.current[fileObj.id];
+          setUploadedFiles((prev) =>
+            prev.map((f) => (f.id === fileObj.id ? { ...f, status: "uploaded", progress: 100 } : f))
+          );
+        } else {
+          setUploadedFiles((prev) =>
+            prev.map((f) => (f.id === fileObj.id ? { ...f, progress: currentProgress } : f))
+          );
+        }
+      }, 150);
+      uploadIntervalsRef.current[fileObj.id] = interval;
     });
   }
 
@@ -285,6 +626,9 @@ function Picker(props) {
   function handleMainButtonClick() {
     if (props.disableChange) return;
     if (pickerMode === "local") {
+      setEditingPath(false);
+      setIsPathInvalid(false);
+      setSegmentValidity([]);
       initializePickerFromValue(value);
       const modalEl = document.getElementById("local-file-picker-modal-" + props.name);
       if (modalEl && window.$) window.$(modalEl).modal("show");
@@ -382,16 +726,91 @@ function Picker(props) {
             onChange={(e) => handleFileChange(e.target.files)}
           />
 
-          <input
-            type="text"
-            name={props.name}
-            id={props.id || props.name}
-            value={value}
-            className="form-control"
-            onChange={handleValueChange}
-            ref={inputRef}
-            readOnly={props.disableChange}
-          />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <input
+              type="text"
+              name={props.name}
+              id={props.id || props.name}
+              value={value}
+              className="form-control"
+              onChange={handleValueChange}
+              ref={inputRef}
+              readOnly={props.disableChange || pickerMode === "remote"}
+              placeholder={pickerMode === "remote" ? "No files uploaded" : ""}
+            />
+            {pickerMode === "remote" && uploadedFiles.length > 0 && (
+              <div style={{
+                border: "1px solid #ced4da",
+                borderRadius: "0.25rem",
+                padding: "0.375rem 0.75rem",
+                backgroundColor: "#fff",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px"
+              }}>
+                {uploadedFiles.map((fileObj, idx) => (
+                  <div key={fileObj.id || idx} style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "0.9rem"
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+                      <span className="file-picker-explorer__icon file-picker-explorer__icon--file" aria-hidden="true" />
+                      <span style={{
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        fontWeight: "500",
+                        color: "#333"
+                      }} title={fileObj.name}>
+                        {fileObj.name}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+                      {fileObj.status === "uploading" && (
+                        <span style={{ color: "#007bff", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.8rem" }}>
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: "12px", height: "12px", borderWidth: "1.5px" }}></span>
+                          {fileObj.progress}%
+                        </span>
+                      )}
+                      {fileObj.status === "uploaded" && (
+                        <span style={{ color: "#28a745", fontWeight: "bold", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          ✓ Uploaded
+                        </span>
+                      )}
+                      {fileObj.status === "failed" && (
+                        <span style={{ color: "#dc3545", fontWeight: "bold", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          ✗ Failed
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveUploadedFile(fileObj)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#dc3545",
+                          cursor: "pointer",
+                          padding: "0 4px",
+                          fontSize: "1.1rem",
+                          lineHeight: "1",
+                          display: "inline-flex",
+                          alignItems: "center"
+                        }}
+                        title="Remove file"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ fontSize: "0.8rem", color: "#6c757d", display: "flex", justifyContent: "space-between", marginTop: "4px", borderTop: "1px solid #dee2e6", paddingTop: "4px" }}>
+                  <span>Total uploaded: {uploadedFiles.length} {uploadedFiles.length === 1 ? 'file' : 'files'}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </FormElementWrapper>
 
@@ -421,8 +840,8 @@ function Picker(props) {
                 <button
                   type="button"
                   className="btn btn-primary file-picker-modal__btn"
-                  data-dismiss="modal"
-                  onClick={handleSaveChange}
+                  onClick={handleSaveClick}
+                  disabled={isPathInvalid}
                 >
                   <SaveIcon />
                   <span>Save changes</span>
@@ -464,34 +883,103 @@ function Picker(props) {
                       <span className="file-picker-explorer__back-icon" aria-hidden="true">←</span>
                       <span className="file-picker-explorer__back-label">Back</span>
                     </button>
-                    <div className="file-picker-explorer__breadcrumb" aria-label="Current path">
-                      {breadcrumbs.length === 0 ? (
-                        <span className="file-picker-explorer__breadcrumb-current">Select a folder</span>
+                    <div
+                      ref={breadcrumbRef}
+                      className="file-picker-explorer__breadcrumb"
+                      aria-label="Current path"
+                      onClick={(e) => {
+                        if (!editingPath) {
+                          startEditing();
+                        } else if (e.target.tagName !== "INPUT") {
+                          const lastIndex = editSegments.length - 1;
+                          setActiveEditIndex(lastIndex);
+                          const lastSeg = editSegments[lastIndex] || "";
+                          setDoubleClickOffset(lastSeg.length);
+                        }
+                      }}
+                      onBlur={handleContainerBlur}
+                      onCopy={handleBreadcrumbCopy}
+                      style={{ outline: "none", cursor: editingPath ? "text" : "pointer" }}
+                      tabIndex={0}
+                    >
+                      {!editingPath ? (
+                        breadcrumbs.length === 0 ? (
+                          <span className="file-picker-explorer__breadcrumb-current">Select a folder</span>
+                        ) : (
+                          breadcrumbs.map((crumb, index) => (
+                            <React.Fragment key={crumb.path}>
+                              {index > 0 && (
+                                <span className="file-picker-explorer__breadcrumb-separator" aria-hidden="true">
+                                  /
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                className={`file-picker-explorer__breadcrumb-item${
+                                  index === breadcrumbs.length - 1
+                                    ? " file-picker-explorer__breadcrumb-item--current"
+                                    : ""
+                                }`}
+                                onClick={(e) => handleCrumbClick(e, crumb, index)}
+                              >
+                                {crumb.label}
+                                {index === breadcrumbs.length - 1 ? " /" : ""}
+                              </button>
+                            </React.Fragment>
+                          ))
+                        )
                       ) : (
-                        breadcrumbs.map((crumb, index) => (
-                          <React.Fragment key={crumb.path}>
-                            {index > 0 && (
-                              <span className="file-picker-explorer__breadcrumb-separator" aria-hidden="true">
-                                /
-                              </span>
-                            )}
-                            <button
-                              type="button"
-                              className={`file-picker-explorer__breadcrumb-item${
-                                index === breadcrumbs.length - 1
-                                  ? " file-picker-explorer__breadcrumb-item--current"
-                                  : ""
-                              }`}
-                              onClick={() => handleBreadcrumbClick(crumb.path)}
-                              disabled={index === breadcrumbs.length - 1}
-                            >
-                              {crumb.label}
-                              {index === breadcrumbs.length - 1 ? " /" : ""}
-                            </button>
-                          </React.Fragment>
-                        ))
+                        <React.Fragment>
+                          <span className="file-picker-explorer__breadcrumb-separator">/</span>
+                          {editSegments.map((segment, index) => {
+                            const isInvalid = segmentValidity[index] === false;
+                            return (
+                              <React.Fragment key={index}>
+                                {index > 0 && (
+                                  <span className="file-picker-explorer__breadcrumb-separator">/</span>
+                                )}
+                                <input
+                                  type="text"
+                                  ref={(el) => (segmentRefs.current[index] = el)}
+                                  className={`file-picker-explorer__breadcrumb-input${isInvalid ? " invalid" : ""}`}
+                                  value={segment}
+                                  onChange={(e) => handleSegmentChange(index, e.target.value)}
+                                  onKeyDown={(e) => handleSegmentKeyDown(index, e)}
+                                  onPaste={(e) => handleSegmentPaste(index, e)}
+                                  style={{
+                                    width: `${Math.max(segment.length, 1) + 2}ch`,
+                                  }}
+                                />
+                              </React.Fragment>
+                            );
+                          })}
+                        </React.Fragment>
                       )}
                     </div>
+                  </div>
+
+                  <div className="file-picker-explorer__header">
+                    <button
+                      type="button"
+                      className="file-picker-explorer__header-cell file-picker-explorer__header-cell--name"
+                      onClick={() => handleSort("name")}
+                    >
+                      Name {sortField === "name" && (sortOrder === "asc" ? " ▴" : " ▾")}
+                    </button>
+                    <button
+                      type="button"
+                      className="file-picker-explorer__header-cell file-picker-explorer__header-cell--size"
+                      onClick={() => handleSort("size")}
+                    >
+                      Size {sortField === "size" && (sortOrder === "asc" ? " ▴" : " ▾")}
+                    </button>
+                    <button
+                      type="button"
+                      className="file-picker-explorer__header-cell file-picker-explorer__header-cell--mtime"
+                      onClick={() => handleSort("mtime")}
+                    >
+                      Date Modified {sortField === "mtime" && (sortOrder === "asc" ? " ▴" : " ▾")}
+                    </button>
                   </div>
 
                   <div className="file-picker-explorer__list" role="listbox" aria-label="Files and folders">
@@ -503,32 +991,48 @@ function Picker(props) {
                         Choose a suggested directory or use the toolbar to browse
                       </div>
                     )}
-                    {subDirs.map(([name, fullPath]) => (
+                    {sortedSubDirs.map((item) => (
                       <button
-                        key={fullPath}
+                        key={item.fullPath}
                         type="button"
                         role="option"
                         className="file-picker-explorer__row file-picker-explorer__row--folder"
-                        onClick={() => handleFolderClick(fullPath)}
+                        onClick={() => handleFolderClick(item.fullPath)}
                       >
-                        <span className="file-picker-explorer__icon file-picker-explorer__icon--folder" aria-hidden="true" />
-                        <span className="file-picker-explorer__row-name">{name}</span>
+                        <div className="file-picker-explorer__cell file-picker-explorer__cell--name">
+                          <span className="file-picker-explorer__icon file-picker-explorer__icon--folder" aria-hidden="true" />
+                          <span className="file-picker-explorer__row-name">{item.name}</span>
+                        </div>
+                        <div className="file-picker-explorer__cell file-picker-explorer__cell--size">
+                          {formatSize(item.size, true)}
+                        </div>
+                        <div className="file-picker-explorer__cell file-picker-explorer__cell--mtime">
+                          {formatMtime(item.mtime)}
+                        </div>
                       </button>
                     ))}
                     {isShowFiles &&
-                      subFiles.map(([name, fullPath]) => (
+                      sortedSubFiles.map((item) => (
                         <button
-                          key={fullPath}
+                          key={item.fullPath}
                           type="button"
                           role="option"
-                          aria-selected={currentPath === fullPath}
+                          aria-selected={currentPath === item.fullPath}
                           className={`file-picker-explorer__row file-picker-explorer__row--file${
-                            currentPath === fullPath ? " file-picker-explorer__row--selected" : ""
+                            currentPath === item.fullPath ? " file-picker-explorer__row--selected" : ""
                           }`}
-                          onClick={() => handleFileClick(fullPath)}
+                          onClick={() => handleFileClick(item.fullPath)}
                         >
-                          <span className="file-picker-explorer__icon file-picker-explorer__icon--file" aria-hidden="true" />
-                          <span className="file-picker-explorer__row-name">{name}</span>
+                          <div className="file-picker-explorer__cell file-picker-explorer__cell--name">
+                            <span className="file-picker-explorer__icon file-picker-explorer__icon--file" aria-hidden="true" />
+                            <span className="file-picker-explorer__row-name">{item.name}</span>
+                          </div>
+                          <div className="file-picker-explorer__cell file-picker-explorer__cell--size">
+                            {formatSize(item.size, false)}
+                          </div>
+                          <div className="file-picker-explorer__cell file-picker-explorer__cell--mtime">
+                            {formatMtime(item.mtime)}
+                          </div>
                         </button>
                       ))}
                   </div>

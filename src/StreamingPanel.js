@@ -82,7 +82,7 @@ const StreamingPanel = ({
     : styles.streamingContent;
 
   return (
-    <div style={{ ...styles.rightPane, width: `${100 - leftWidth}%` }}>
+    <div className="job-preview-right-panel" style={{ ...styles.rightPane, width: `${100 - leftWidth}%` }}>
       <div style={titleStyle}>
         <span>Live Output</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

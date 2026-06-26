@@ -15,9 +15,12 @@ const integratedStyles = {
   },
   editorWrapper: {
     height: '100%',
-    overflow: 'auto',
+    overflow: 'hidden',
     backgroundColor: 'white',
     flexGrow: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
   },
   emptyContainer: {
     height: '100%',

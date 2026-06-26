@@ -236,6 +236,7 @@ function DynamicSelect(props) {
           onChange={handleValueChange}
           options={options}
           name={props.name}
+          inputId={props.id || props.name}
           isLoading={isLoading}
           styles={{
             ...customSelectStyles,

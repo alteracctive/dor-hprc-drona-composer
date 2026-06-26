@@ -156,6 +156,7 @@ function AutocompleteSelect(props) {
           menuPortalTarget={document.body}
           menuPosition="fixed"
           name={props.name}
+          inputId={props.id || props.name}
           styles={{
             ...customSelectStyles,
             control: (base, state) => ({

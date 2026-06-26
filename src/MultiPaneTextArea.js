@@ -179,7 +179,10 @@ const MultiPaneTextArea = forwardRef(({
               key={index}
               style={{
                 ...commonStyles.paneContent,
-                display: isActive ? 'block' : 'none',
+                display: isActive ? (integrated ? 'flex' : 'block') : 'none',
+                flexDirection: integrated ? 'column' : undefined,
+                flex: integrated ? 1 : undefined,
+                minHeight: integrated ? 0 : undefined,
                 height: integrated ? '100%' : 'auto',
               }}
             >
@@ -201,9 +204,17 @@ const MultiPaneTextArea = forwardRef(({
                     theme={eclipse}
                     extensions={[
                       ...getLanguageExtension(pane.preview_name),
+                      EditorView.contentAttributes.of({
+                        "aria-label": pane.preview_name || pane.name || "Text Code Editor"
+                      }),
                       EditorView.theme({
                         "&": { 
-                          caretColor: "#500000"
+                          caretColor: "#500000",
+                          height: "100%"
+                        },
+                        ".cm-scroller": {
+                          overflow: "auto",
+                          height: "100%"
                         },
                         ".cm-cursor": { 
                           borderLeftColor: "#500000 !important", 
@@ -219,7 +230,8 @@ const MultiPaneTextArea = forwardRef(({
                           backgroundColor: "rgba(80, 0, 0, 0.03)"
                         },
                         ".cm-editor": {
-                          fontSize: "13px"
+                          fontSize: "13px",
+                          height: "100%"
                         },
                         ".cm-gutters": {
                           backgroundColor: "#f8f9fa",
@@ -248,6 +260,7 @@ const MultiPaneTextArea = forwardRef(({
                     id={pane.name}
                     name={pane.name}
                     data-language={pane.preview_name}
+                    aria-label={pane.preview_name || pane.name || "Text Code Editor"}
                   />
                 </div>
               )}

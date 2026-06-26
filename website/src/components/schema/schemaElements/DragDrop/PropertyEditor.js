@@ -12,6 +12,7 @@ function PropertyField({ property, value, onChange, propertyKey }) {
       return (
         <input
           type="text"
+          id={propertyKey}
           value={value || defaultValue || ""}
           onChange={(e) => handleChange(e.target.value)}
           className="form-control"
@@ -23,6 +24,7 @@ function PropertyField({ property, value, onChange, propertyKey }) {
       return (
         <input
           type="number"
+          id={propertyKey}
           value={value || defaultValue || 0}
           onChange={(e) => handleChange(Number(e.target.value))}
           min={min}
@@ -38,11 +40,12 @@ function PropertyField({ property, value, onChange, propertyKey }) {
         <div style={{ position: "relative", display: "flex", alignItems: "center", marginLeft: "20px", gap: "0.5rem" }}>
           <input
             type="checkbox"
+            id={propertyKey}
             checked={value !== undefined ? value : defaultValue || false}
             onChange={(e) => handleChange(e.target.checked)}
             className="form-check-input"
           />
-          <label style={{ marginBottom: 0 }}>
+          <label htmlFor={propertyKey} style={{ marginBottom: 0 }}>
             {value !== undefined ? (value ? "Yes" : "No") : (defaultValue ? "Yes" : "No")}
           </label>
         </div>
@@ -54,6 +57,7 @@ function PropertyField({ property, value, onChange, propertyKey }) {
 
       return (
         <select
+          id={propertyKey}
           value={value || defaultValue || ""}
           onChange={(e) => handleChange(e.target.value)}
           className="form-control"
@@ -71,6 +75,7 @@ function PropertyField({ property, value, onChange, propertyKey }) {
     case "textarea":
       return (
         <textarea
+          id={propertyKey}
           value={value || defaultValue || ""}
           onChange={(e) => handleChange(e.target.value)}
           className="form-control"
@@ -83,6 +88,7 @@ function PropertyField({ property, value, onChange, propertyKey }) {
       return (
         <input
           type="text"
+          id={propertyKey}
           value={value || defaultValue || ""}
           onChange={(e) => handleChange(e.target.value)}
           className="form-control"
@@ -185,13 +191,16 @@ function PropertyEditor({ element, template, onSave, onCancel }) {
         <div style={{ marginBottom: "1.5rem" }}>
           {Object.entries(template.properties).map(([key, property]) => (
             <div key={key} style={{ marginBottom: "1rem" }}>
-              <label style={{
-                display: "block",
-                marginBottom: "0.5rem",
-                fontWeight: "600",
-                fontSize: "0.9rem",
-                color: "#333"
-              }}>
+              <label
+                htmlFor={key}
+                style={{
+                  display: "block",
+                  marginBottom: "0.5rem",
+                  fontWeight: "600",
+                  fontSize: "0.9rem",
+                  color: "#333"
+                }}
+              >
                 {key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ")}
                 {property.required && <span style={{ color: "red" }}> *</span>}
               </label>

@@ -184,11 +184,12 @@ export default function JobNameLocation({
                     )}
 
                     {showLocation && (
-                        <div style={{ display: 'flex', flexGrow: 1, gap: '1.5rem' }}>
-
+                        <div style={{ display: 'flex', flexGrow: 1, gap: '1.5rem', alignItems: 'center' }}>
+                            <label htmlFor="location" style={{ whiteSpace: 'nowrap' }}>Job Directory</label>
                             <div style={{ flex: 1 }}>
                                 <Picker
                                     name={"location"}
+                                    id={"location"}
                                     useLabel={false}
                                     localLabel={pickerLabel}
                                     defaultLocation={runLocation}

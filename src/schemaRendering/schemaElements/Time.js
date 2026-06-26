@@ -93,11 +93,13 @@ function Time(props) {
         <input
           type="number"
           name="days"
+          id={props.id || props.name}
           className="form-control"
           min="0"
           placeholder="Days"
           value={days || ""}
           onChange={handleValueChange}
+          aria-label="Days"
         />
         <input
           type="number"
@@ -108,6 +110,7 @@ function Time(props) {
           placeholder="Hours"
           value={hours || ""}
           onChange={handleValueChange}
+          aria-label="Hours"
         />
         <input
           type="number"
@@ -118,6 +121,7 @@ function Time(props) {
           placeholder="Minutes"
           value={minutes || ""}
           onChange={handleValueChange}
+          aria-label="Minutes"
         />
       </div>
       <input name={props.name} type="hidden" value={value} />

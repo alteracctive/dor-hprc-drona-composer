@@ -23,7 +23,7 @@ def save_file(file, location):
 
     return file_path
 
-def fetch_subdirectories(path):
+def fetch_subdirectories(path, details=False):
     """Get subdirectories and files in a directory"""
     total_seen = 0
     max_items = 500
@@ -40,12 +40,38 @@ def fetch_subdirectories(path):
                 break
 
             if entry.is_dir(follow_symlinks=False):
-                subdirectories.append(entry.name)
+                if details:
+                    try:
+                        stat_res = entry.stat(follow_symlinks=False)
+                        size = stat_res.st_size
+                        mtime = stat_res.st_mtime
+                    except Exception:
+                        size = None
+                        mtime = None
+                    subdirectories.append({
+                        "name": entry.name,
+                        "size": size,
+                        "mtime": mtime
+                    })
+                else:
+                    subdirectories.append(entry.name)
             elif show_files and entry.is_file(follow_symlinks=False):
-                subfiles.append(entry.name)
+                if details:
+                    try:
+                        stat_res = entry.stat(follow_symlinks=False)
+                        size = stat_res.st_size
+                        mtime = stat_res.st_mtime
+                    except Exception:
+                        size = None
+                        mtime = None
+                    subfiles.append({
+                        "name": entry.name,
+                        "size": size,
+                        "mtime": mtime
+                    })
+                else:
+                    subfiles.append(entry.name)
 
-    #subdirectories = sorted([os.path.basename(entry) for entry in os.listdir(path) if os.path.isdir(os.path.join(path, entry))])
-    #subfiles = sorted([os.path.basename(entry) for entry in os.listdir(path) if os.path.isfile(os.path.join(path, entry))])  
     return {"subdirectories": subdirectories, "subfiles": subfiles, "truncated": truncated, "total_seen": total_seen}
 
 def download_file_route():
@@ -103,6 +129,7 @@ def get_modules_route():
 def get_subdirectories_route():
     """Get subdirectories and files in a directory"""
     fullpath = request.args.get('path')
+    details_param = request.args.get('details', 'false').lower() == 'true'
     if not fullpath:
         return jsonify({'error': 'No path provided'}), 400
     if not os.path.exists(fullpath):
@@ -110,7 +137,7 @@ def get_subdirectories_route():
     if not os.path.isdir(fullpath):
         return jsonify({'error': 'Path is not a directory'}), 400
     try:
-        return jsonify(fetch_subdirectories(fullpath))
+        return jsonify(fetch_subdirectories(fullpath, details=details_param))
     except PermissionError:
         return jsonify({'error': 'Permission denied'}), 403
     except Exception as e:
@@ -152,9 +179,56 @@ def read_file_content_route():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def validate_path_route():
+    """Validate a path segment-by-segment and return validity status"""
+    fullpath = request.args.get('path')
+    if not fullpath:
+        return jsonify({'error': 'No path provided'}), 400
+
+    # Normalize slashes and path
+    fullpath = fullpath.replace("\\", "/")
+    fullpath = os.path.normpath(fullpath)
+    
+    parts = fullpath.split("/")
+    is_absolute = fullpath.startswith("/")
+    
+    validity = []
+    current_acc = "/" if is_absolute else ""
+    
+    first_invalid_index = -1
+    
+    for i, part in enumerate(parts):
+        if not part:
+            if i == 0 and is_absolute:
+                continue
+            # Handle empty segment or trailing slash
+            validity.append(True)
+            continue
+            
+        if is_absolute and current_acc == "/":
+            current_acc = "/" + part
+        else:
+            current_acc = os.path.join(current_acc, part) if current_acc else part
+            
+        if first_invalid_index != -1:
+            validity.append(False)
+        else:
+            if os.path.exists(current_acc):
+                validity.append(True)
+            else:
+                validity.append(False)
+                first_invalid_index = len(validity) - 1
+                
+    return jsonify({
+        "valid": first_invalid_index == -1,
+        "invalid_index": first_invalid_index,
+        "validity": validity
+    })
+
 def register_file_routes(blueprint):
     """Register all file-related routes to the blueprint"""
     blueprint.route('/download_file', methods=['POST'])(download_file_route)
     blueprint.route('/modules', methods=['GET'])(get_modules_route)
     blueprint.route('/subdirectories', methods=['GET'])(get_subdirectories_route)
     blueprint.route('/file_content', methods=['GET'])(read_file_content_route)
+    blueprint.route('/validate_path', methods=['GET'])(validate_path_route)

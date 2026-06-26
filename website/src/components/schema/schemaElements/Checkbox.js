@@ -50,7 +50,7 @@ function Checkbox(props) {
         <input
           type="checkbox"
           name={props.name}
-          id={props.id}
+          id={props.id || props.name}
           value={checkboxValue}
           checked={isChecked}
           className="form-control move-left"

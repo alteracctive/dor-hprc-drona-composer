@@ -341,7 +341,7 @@ function EnvironmentTable({ rows, sortColumn, sortDirection, onSort, renderActio
         <tbody>
           {sortedRows.map((row) => (
             <tr key={getRowKey(row)}>
-              <td className="env-table__col-env">
+              <td className="env-table__col-env" data-label="Environment">
                 <EnvironmentNameCell
                   name={getEnvName(row)}
                   envKey={row.env}
@@ -350,11 +350,11 @@ function EnvironmentTable({ rows, sortColumn, sortDirection, onSort, renderActio
                   textStyle={getEnvStyle ? getEnvStyle(row) : undefined}
                 />
               </td>
-              <td className="env-table__col-description">{row.description || "N/A"}</td>
-              <td className="env-table__col-category">{row.category || "N/A"}</td>
-              <td className="env-table__col-organization">{row.organization || "N/A"}</td>
-              <td className="env-table__col-version">{row.version || "N/A"}</td>
-              <td className="env-table__col-action">{renderAction(row)}</td>
+              <td className="env-table__col-description" data-label="Description">{row.description || "N/A"}</td>
+              <td className="env-table__col-category" data-label="Category">{row.category || "N/A"}</td>
+              <td className="env-table__col-organization" data-label="Organization">{row.organization || "N/A"}</td>
+              <td className="env-table__col-version" data-label="Version">{row.version || "N/A"}</td>
+              <td className="env-table__col-action" data-label="Action">{renderAction(row)}</td>
             </tr>
           ))}
         </tbody>
@@ -373,10 +373,13 @@ function EnvironmentCompactGrid({
   getEnvStyle,
   showMeta,
 }) {
-  const sortedRows = useMemo(
-    () => sortRows(rows, sortColumn, sortDirection),
-    [rows, sortColumn, sortDirection]
-  );
+  const sortedRows = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      const nameA = (getEnvName(a) || "").toString().toLowerCase();
+      const nameB = (getEnvName(b) || "").toString().toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+  }, [rows, getEnvName]);
 
   return (
     <div className="env-compact-grid">

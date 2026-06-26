@@ -54,10 +54,14 @@ function ResubmitConfirmModal({ isOpen, onConfirm, onCancel }) {
               </button>
             </div>
             <div className="modal-body">
-              <p className="mb-0">
+              <p className="mb-3">
                 This job has already been submitted. Do you want to submit and run it again
                 with the same configuration?
               </p>
+              <div className="alert alert-warning mb-0" role="alert">
+                <i className="fas fa-exclamation-triangle me-2"></i>
+                <b>Warning:</b> Job files will overwrite existing files with the same name as you are resubmitting from the same job name or job ID.
+              </div>
             </div>
             <div className="modal-footer">
               <button

@@ -196,8 +196,14 @@ function Uploader(props) {
   function handleAdd() {
     const option = selectRef.current.value;
     if (option === "file") {
+      if (fileInput.current) {
+        fileInput.current.value = "";
+      }
       fileInput.current.click();
     } else if (option === "folder") {
+      if (folderInput.current) {
+        folderInput.current.value = "";
+      }
       folderInput.current.click();
     } else {
       alert("Please select a file or folder");
