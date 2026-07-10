@@ -461,7 +461,7 @@ body:has(.job-composer-page--modern),
 .job-composer-sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
   width: 100%;
 }
 
@@ -469,8 +469,8 @@ body:has(.job-composer-page--modern),
   display: flex;
   align-items: center;
   box-shadow: none !important;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.85rem;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
 }
 
 .job-composer-sidebar .btn svg {

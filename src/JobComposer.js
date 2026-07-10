@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Composer from "./schemaRendering/Composer";
 import ErrorAlert from "./ErrorAlert";
 import SubmissionHistory from "./SubmissionHistory";
-import UserGuidePage from "./UserGuidePage";
 import RequiredFieldsModal from "./RequiredFieldsModal";
 import ResubmitConfirmModal from "./ResubmitConfirmModal";
 import PreviewScriptChangeModal from "./PreviewScriptChangeModal";
@@ -441,7 +440,6 @@ function JobComposer({
   const sidebarItems = [
     { id: "workflow", label: "Workflow Engine", icon: "gear" },
     { id: "history", label: "Jobs History", icon: "clock" },
-    { id: "documents", label: "User Guides", icon: "book" },
     { id: "settings", label: "Settings", icon: "settings" },
   ];
 
@@ -715,29 +713,6 @@ function JobComposer({
                   handleRerun={props.handleRerun}
                   handleForm={handleFormFromHistory}
                 />
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: activeSection === "documents" ? "flex" : "none",
-                flexDirection: "column",
-                flex: 1,
-                minHeight: 0,
-              }}
-            >
-              <div
-                className="card-body job-composer-user-guides-body"
-                style={{
-                  overflow: "hidden",
-                  flex: "1 1 auto",
-                  minHeight: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  padding: 0,
-                }}
-              >
-                <UserGuidePage />
               </div>
             </div>
 
