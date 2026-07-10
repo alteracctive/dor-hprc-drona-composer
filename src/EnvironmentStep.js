@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import ReactDOM from "react-dom";
-import { getEnvironmentIconUrl, getEnvironmentInitial, getEnvironmentEmoji } from "./EnvironmentIcons";
 import {
   PREFERENCES_CHANGED_EVENT,
   readCompactModeShowMeta,
@@ -16,30 +15,9 @@ function readCompactModePreference() {
   }
 }
 
-function EnvironmentNameCell({ name, envKey, iconUrl, apiIcon, textStyle }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const resolvedIconUrl = getEnvironmentIconUrl(envKey, iconUrl);
-  const emoji = getEnvironmentEmoji(envKey, apiIcon);
-  const showImage = resolvedIconUrl && !imageFailed;
-
+function EnvironmentNameCell({ name, textStyle }) {
   return (
     <span className="env-table__env-cell" style={textStyle}>
-      {showImage ? (
-        <img
-          className="env-table__env-icon"
-          src={resolvedIconUrl}
-          alt=""
-          onError={() => setImageFailed(true)}
-        />
-      ) : emoji ? (
-        <span className="env-table__env-emoji" aria-hidden="true">
-          {emoji}
-        </span>
-      ) : (
-        <span className="env-table__env-fallback" aria-hidden="true">
-          {getEnvironmentInitial(name)}
-        </span>
-      )}
       <span className="env-table__env-name">{name}</span>
     </span>
   );
@@ -344,9 +322,6 @@ function EnvironmentTable({ rows, sortColumn, sortDirection, onSort, renderActio
               <td className="env-table__col-env" data-label="Environment">
                 <EnvironmentNameCell
                   name={getEnvName(row)}
-                  envKey={row.env}
-                  iconUrl={row.icon_url}
-                  apiIcon={row.icon}
                   textStyle={getEnvStyle ? getEnvStyle(row) : undefined}
                 />
               </td>
@@ -389,9 +364,6 @@ function EnvironmentCompactGrid({
             <div className="env-compact-card__name">
               <EnvironmentNameCell
                 name={getEnvName(row)}
-                envKey={row.env}
-                iconUrl={row.icon_url}
-                apiIcon={row.icon}
                 textStyle={getEnvStyle ? getEnvStyle(row) : undefined}
               />
             </div>

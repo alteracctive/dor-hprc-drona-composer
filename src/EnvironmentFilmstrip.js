@@ -1,29 +1,4 @@
 import React, { useMemo, useState } from "react";
-import {
-  getEnvironmentIconUrl,
-  getEnvironmentEmoji,
-} from "./EnvironmentIcons";
-
-const DEFAULT_ICON = "🧩";
-
-function EnvTileIcon({ name, apiIcon }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const iconUrl = getEnvironmentIconUrl(name, null);
-  const emoji = getEnvironmentEmoji(name, apiIcon);
-
-  if (iconUrl && !imageFailed) {
-    return (
-      <img
-        className="env-icon-img"
-        src={iconUrl}
-        alt=""
-        onError={() => setImageFailed(true)}
-      />
-    );
-  }
-
-  return <div className="env-icon">{emoji || DEFAULT_ICON}</div>;
-}
 
 function EnvironmentFilmstrip({
   environments = [],
@@ -83,7 +58,6 @@ function EnvironmentFilmstrip({
           onSelectEnvironment("runtime", option);
         }}
       >
-        <EnvTileIcon name={name} apiIcon={env.icon} />
         <div className="env-name">{name}</div>
 
         {isUserEnv && onRemoveEnvironment && (

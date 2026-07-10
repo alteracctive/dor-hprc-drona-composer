@@ -9,11 +9,6 @@ import WorkflowStepTracker from "./WorkflowStepTracker";
 import EnvironmentStep from "./EnvironmentStep";
 import JobPreviewStep from "./JobPreviewStep";
 import { useJobSocket } from "./hooks/useJobSocket";
-import {
-  getEnvironmentIconUrl,
-  getEnvironmentEmoji,
-  getEnvironmentInitial,
-} from "./EnvironmentIcons";
 import { validateRequiredFields } from "./schemaRendering/utils/fieldUtils";
 import ConfigGate from "./ConfigGate";
 import SettingsPage from "./SettingsPage";
@@ -27,30 +22,9 @@ import {
 import { arePreviewPanesDirty } from "./utils/previewPaneUtils";
 import "./styles/JobComposerEnvSplitStyles.js";
 
-function EnvironmentStepHeader({ name, icon }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const iconUrl = getEnvironmentIconUrl(name, null);
-  const emoji = getEnvironmentEmoji(name, icon);
-  const showImage = iconUrl && !imageFailed;
-
+function EnvironmentStepHeader({ name }) {
   return (
     <h5 className="workflow-env-header mb-3">
-      {showImage ? (
-        <img
-          className="workflow-env-header__icon"
-          src={iconUrl}
-          alt=""
-          onError={() => setImageFailed(true)}
-        />
-      ) : emoji ? (
-        <span className="workflow-env-header__emoji" aria-hidden="true">
-          {emoji}
-        </span>
-      ) : (
-        <span className="workflow-env-header__fallback" aria-hidden="true">
-          {getEnvironmentInitial(name)}
-        </span>
-      )}
       <span className="workflow-env-header__name">{name}</span>
     </h5>
   );
@@ -65,6 +39,14 @@ function SidebarIcon({ name }) {
     "aria-hidden": true,
     style: { flexShrink: 0 },
   };
+
+  if (name === "code") {
+    return (
+      <svg {...iconProps}>
+        <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z" />
+      </svg>
+    );
+  }
 
   if (name === "gear") {
     return (
@@ -438,7 +420,7 @@ function JobComposer({
   };
 
   const sidebarItems = [
-    { id: "workflow", label: "Workflow Engine", icon: "gear" },
+    { id: "workflow", label: "Job Composer", icon: "code" },
     { id: "history", label: "Jobs History", icon: "clock" },
     { id: "settings", label: "Settings", icon: "settings" },
   ];

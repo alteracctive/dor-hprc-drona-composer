@@ -452,6 +452,7 @@ body:has(.job-composer-page--modern),
 
 .job-composer-sidebar {
   align-self: flex-start;
+  padding: 1.25rem;
 }
 
 .job-composer-sidebar-toggle {
