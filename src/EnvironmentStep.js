@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import ReactDOM from "react-dom";
 import {
   PREFERENCES_CHANGED_EVENT,
@@ -62,6 +62,21 @@ function DownloadIcon() {
   );
 }
 
+function ThreeDotsIcon() {
+  return (
+    <svg
+      className="env-dropdown-toggle__icon"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+    </svg>
+  );
+}
+
 function RemoveButton({ onClick, disabled = false }) {
   return (
     <button
@@ -77,12 +92,56 @@ function RemoveButton({ onClick, disabled = false }) {
 }
 
 function EnvironmentActions({ isCompactMode, onReady, onRemove, showRemove = false }) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   const groupClass = isCompactMode ? "env-action-group--compact" : "env-action-group--detail";
 
   return (
     <div className={`env-action-group ${groupClass}`}>
       <ReadyButton onClick={onReady} />
-      {showRemove && onRemove && <RemoveButton onClick={onRemove} />}
+      {showRemove && onRemove && (
+        <div className="env-dropdown-container" ref={dropdownRef} style={{ position: "relative" }}>
+          <button
+            type="button"
+            className={`btn btn-sm env-dropdown-toggle ${isDropdownOpen ? "active" : ""}`}
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            aria-expanded={isDropdownOpen}
+            title="Options"
+          >
+            <ThreeDotsIcon />
+          </button>
+          {isDropdownOpen && (
+            <div className="env-dropdown-menu">
+              <button
+                type="button"
+                className="env-dropdown-item env-dropdown-item--danger"
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  onRemove();
+                }}
+              >
+                <TrashIcon />
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

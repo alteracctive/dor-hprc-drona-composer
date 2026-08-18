@@ -1253,6 +1253,88 @@ body:has(.job-composer-page--modern),
   flex-shrink: 0;
 }
 
+.env-dropdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
+  border-radius: 8px !important;
+  width: 31px;
+  height: 31px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.env-dropdown-toggle:hover,
+.env-dropdown-toggle:focus,
+.env-dropdown-toggle.active {
+  background-color: #f8f9fa;
+  color: #500000;
+  border-color: rgba(80, 0, 0, 0.4);
+}
+
+.env-dropdown-toggle__icon {
+  flex-shrink: 0;
+}
+
+.env-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.25rem;
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1050;
+  min-width: 120px;
+  padding: 0.35rem 0;
+  animation: envDropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes envDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.env-dropdown-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.45rem 0.85rem;
+  clear: both;
+  font-weight: 400;
+  color: #212529;
+  text-align: inherit;
+  white-space: nowrap;
+  background-color: transparent;
+  border: 0;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.env-dropdown-item--danger {
+  color: #dc3545;
+}
+
+.env-dropdown-item--danger:hover,
+.env-dropdown-item--danger:focus {
+  background-color: #fce8e6;
+  color: #c5221f;
+  text-decoration: none;
+}
+
 .env-action-group {
   display: flex;
 }
