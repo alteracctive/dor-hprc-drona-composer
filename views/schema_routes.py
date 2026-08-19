@@ -4,6 +4,8 @@ import json
 import jsonref
 import subprocess
 import traceback
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 from .error_handler import APIError, handle_api_error
 from copy import deepcopy
 from .utils import get_envs_dir, get_runtime_dir
@@ -180,7 +182,25 @@ def get_schema_route(environment):
     try:
         abs_path = os.path.abspath(base_path)
         base_uri = f'file:///{abs_path.lstrip("/").replace(os.sep, "/")}/'
-        jsonref_result = jsonref.loads(schema_data, base_uri=base_uri, proxies=True)
+        
+        def custom_loader(uri):
+            parsed = urlparse(uri)
+            if parsed.scheme == 'file':
+                pathname = os.path.abspath(url2pathname(parsed.path))
+                if os.path.exists(pathname):
+                    with open(pathname, 'r') as f:
+                        return json.load(f)
+                # Fallback to runtime support directory
+                rel_path = os.path.relpath(pathname, abs_path)
+                runtime_path = os.path.join(get_runtime_dir(), rel_path)
+                if os.path.exists(runtime_path):
+                    with open(runtime_path, 'r') as f:
+                        return json.load(f)
+                raise FileNotFoundError(f"Schema reference not found. Tried: {pathname} and {runtime_path}")
+            else:
+                return jsonref.jsonloader(uri)
+
+        jsonref_result = jsonref.loads(schema_data, base_uri=base_uri, loader=custom_loader, proxies=True)
         
         schema_dict = convert_jsonref_to_dict(jsonref_result)
         
